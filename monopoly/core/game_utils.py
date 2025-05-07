@@ -1,8 +1,12 @@
 from typing import List
 
+from monopoly.core.board import Board
+from monopoly.core.dice import Dice
+
 from monopoly.core.player import Player
 from monopoly.log import Log
-from settings import SimulationSettings
+from monopoly.log_settings import LogSettings
+from settings import SimulationSettings, GameSettings, GameMechanics
 
 
 def assign_property(player, property_to_assign, board):
@@ -13,7 +17,7 @@ def assign_property(player, property_to_assign, board):
     player.update_lists_of_properties_to_trade(board)
 
 
-def _check_end_conditions(players: List[Player], log: Log, game_number, turn_n) -> bool:
+def _check_end_game_conditions(players: List[Player], log: Log, game_number, turn_n) -> bool:
     """
     Return True when:
       1) fewer than 2 players remain, or
@@ -47,3 +51,44 @@ def log_players_and_board_state(board, log, players):
                     f"at position {player.position} ({board.cells[player.position].name})")
         else:
             log.add(f"- Player {player_n}, '{player.name}': Bankrupt")
+
+
+def setup_players(board, dice):
+    players = [Player(player_name, player_setting)
+               for player_name, player_setting in GameSettings.players_list]
+
+    if GameSettings.shuffle_players:
+        dice.shuffle(players)  # dice has a thread-safe copy of random.shuffle
+
+    # Set up players starting money according to the game settings:
+    # Supports either a dict (money per-player) or single value
+    starting_money = GameSettings.starting_money
+    if isinstance(starting_money, dict):
+        for player in players:
+            player.money = starting_money.get(player.name, 0)
+    # If starting money is a single value, assign it to all players
+    else:
+        for player in players:
+            player.money = starting_money
+
+    # set up players' initial properties
+    for player in players:
+        property_indices = GameSettings.starting_properties.get(player.name, [])
+        for cell_index in property_indices:
+            assign_property(player, board.cells[cell_index], board)
+
+    return players
+
+
+def setup_game(game_number, game_seed):
+    events_log = Log(LogSettings.EVENTS_LOG_PATH, disabled=not LogSettings.KEEP_GAME_LOG)
+    events_log.add(f"= GAME {game_number} of {SimulationSettings.n_games} (seed = {game_seed}) =")
+
+    bankruptcies_log = Log(LogSettings.BANKRUPTCIES_PATH)
+
+    # Initialize the board (plots, chance, community chest etc.)
+    board = Board(GameSettings)
+    dice = Dice(game_seed, GameMechanics.dice_count, GameMechanics.dice_sides, events_log)
+    dice.shuffle(board.chance.cards)
+    dice.shuffle(board.chest.cards)
+    return board, dice, events_log, bankruptcies_log
