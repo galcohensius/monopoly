@@ -60,7 +60,7 @@ For example:
 - Number of players (4)
 - Shuffling player order between simulations (True)
 - Starting money, either the same for all or per player going 1st, 2nd, etc. ($1500 for all)
-- Starting properties, allows to simulate specific mid-game situation (nothing for all, like in regular game start) 
+- Starting properties - allows simulating a specific mid-game situation (nothing for all, like in regular game start) 
  
 ### Rules-Related:
 - Number of dice (2)
