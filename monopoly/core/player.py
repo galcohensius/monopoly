@@ -213,9 +213,7 @@ class Player:
         return False
 
     def handle_chance(self, board, players, log):
-        """ Draw and act on a Chance card
-        Return True if the move should be over (go to jail)
-        """
+        """ Draw and act on a Chance card Return True if the move should be over (go to jail) """
         card = board.chance.draw()
         log.add(f"{self} drew Chance card: '{card}'")
 
@@ -254,7 +252,7 @@ class Player:
             self.position -= 3
             log.add(f"{self} goes to {board.cells[self.position]}")
 
-        # Sends to a type of location, and affects the rent amount
+        # Sends to a type of location and affects the rent amount
 
         elif card == "Advance to the nearest Railroad. " + \
                 "If owned, pay owner twice the rental to which they are otherwise entitled":
@@ -280,7 +278,7 @@ class Player:
             self.position = nearest_utility
             self.other_notes = "10 times dice"
 
-        # Jail related (go to jail or GOOJF card)
+        # Jail-related (go to jail or GOOJF card)
 
         elif card == "Get Out of Jail Free":
             log.add(f"{self} now has a 'Get Out of Jail Free' card")

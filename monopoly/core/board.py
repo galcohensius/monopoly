@@ -4,6 +4,9 @@ That includes:
     - Special cells (Go, Jail, etc.)
     - Decks (Chance, Community Chest)
 """
+import random
+
+from monopoly.cards.card import CHANCE_CARDS, COMMUNITY_CHEST_CARDS
 from monopoly.core.cell import Cell, GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
 from monopoly.core.constants import INDIGO, GREEN, YELLOW, RED, ORANGE, PINK, LIGHTBLUE, BROWN, RAILROADS, UTILITIES
 from monopoly.core.deck import Deck
@@ -81,24 +84,27 @@ class Board:
         self.available_houses = GameMechanics.available_houses
         self.available_hotels = GameMechanics.available_hotels
 
+        # Chance and Community Chest decks
+        self.chance = Deck(CHANCE_CARDS.copy())
+        random.shuffle(self.chance.cards)
+
+        self.chest = Deck(COMMUNITY_CHEST_CARDS.copy())
+        random.shuffle(self.chest.cards)
+
         # Chance deck
         self.chance = Deck([
             "Advance to Boardwalk",
             "Advance to Go (Collect $200)",
             "Advance to Illinois Avenue. If you pass Go, collect $200",
             "Advance to St. Charles Place. If you pass Go, collect $200",
-            "Advance to the nearest Railroad. If owned, pay owner twice " + \
-            "the rental to which they are otherwise entitled",
-            "Advance to the nearest Railroad. If owned, pay owner twice " + \
-            "the rental to which they are otherwise entitled",
-            "Advance token to nearest Utility. " + \
-            "If owned, throw dice and pay owner a total ten times amount thrown.",
+            "Advance to the nearest Railroad. If owned, pay owner twice the rental to which they are otherwise entitled",
+            "Advance to the nearest Railroad. If owned, pay owner twice the rental to which they are otherwise entitled",
+            "Advance token to nearest Utility. If owned, throw dice and pay owner a total ten times amount thrown.",
             "Bank pays you dividend of $50",
             "Get Out of Jail Free",
             "Go Back 3 Spaces",
             "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200",
-            "Make general repairs on all your property. For each house pay $25. " + \
-            "For each hotel pay $100",
+            "Make general repairs on all your property. For each house pay $25. For each hotel pay $100",
             "Speeding fine $15",
             "Take a trip to Reading Railroad. If you pass Go, collect $200",
             "You have been elected Chairman of the Board. Pay each player $50",
