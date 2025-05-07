@@ -86,8 +86,7 @@ class Player:
         if self.is_bankrupt:
             return MoveResult.BANKRUPT  # check if this is needed or this will writes bankrupt twice
 
-        log.add(f"=== {self.name} (${self.money}, " +
-                f"at {board.cells[self.position].name}) goes: ===")
+        log.add(f"=== {self.name} (${self.money}, at {board.cells[self.position].name}) goes: ===")
 
         # Before the throwing of the dice:
         # 1. Trade with other players. Keep trading until no trades are possible
@@ -535,7 +534,7 @@ class Player:
             """ Decide what is the next property to improve:
             - it should be eligible for improvement (is monopoly, not mortgaged,
             has not more houses than other cells in the group)
-            - start with cheapest
+            - start with the cheapest
             """
             can_be_improved = []
             for cell in self.owned:
@@ -550,8 +549,8 @@ class Player:
                         and cell.group not in (RAILROADS, UTILITIES)
                 ):
                     # Look at other cells in this group
-                    # If they have fewer houses, this cell can not be improved
-                    # If any cells in the group is mortgaged, this cell can not be improved
+                    # If they have fewer houses, this cell cannot be improved
+                    # If any cells in the group are mortgaged, this cell cannot be improved
                     for other_cell in board.groups[cell.group]:
                         if (other_cell.has_houses < cell.has_houses and not other_cell.has_hotel) or other_cell.is_mortgaged:
                             break
@@ -560,10 +559,10 @@ class Player:
                         if cell.has_houses != 4 and board.available_houses > 0 or \
                                 cell.has_houses == 4 and board.available_hotels > 0:
                             can_be_improved.append(cell)
-            # Sort the list by the cost of house
+            # Sort the list by the cost of a house
             can_be_improved.sort(key=lambda x: x.cost_house)
 
-            # Return first (the cheapest) property that can be improved
+            # Return the cheapest property that can be improved
             if can_be_improved:
                 return can_be_improved[0]
             return None
