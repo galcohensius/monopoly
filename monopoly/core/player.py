@@ -553,7 +553,7 @@ class Player:
                     # If they have fewer houses, this cell can not be improved
                     # If any cells in the group is mortgaged, this cell can not be improved
                     for other_cell in board.groups[cell.group]:
-                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
+                        if (other_cell.has_houses < cell.has_houses and not other_cell.has_hotel) or other_cell.is_mortgaged:
                             break
                     else:
                         # Make sure there are available houses/hotel for this improvement
