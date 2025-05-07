@@ -10,38 +10,38 @@ from typing import Union
 
 
 class Log:
-    """ Class to handle logging of game events
-    """
-    # Lock is declared on the class level,
-    # so it would be shared among processes
+    """ Class to handle logging of game events, Thread-safe: writes whole batches under a single lock. """
     lock = multiprocessing.Lock()
 
-    def __init__(self, log_file_name: Union[str, PathLike] = "log.txt", disabled: bool = False):
+    def __init__(self,
+                 log_file_name: Union[str, PathLike] = "log.txt",
+                 disabled: bool = False):
         self.log_file_name = log_file_name
         self.content = []
         self.disabled = disabled
 
     def add(self, data):
-        """ Add a line to a Log
-        """
+        """ Add one line to the in‐memory buffer. """
         if self.disabled:
             return
-        self.content.append(data)
+        line = str(data).rstrip("\n") + "\n"
+        self.content.append(line)
 
     def save(self):
-        """ Write out the log
-        """
-        if self.disabled:
+        """ Write out the log to the file, then clear the in‐memory buffer. """
+        if self.disabled or not self.content:
             return
+
         with self.lock:
             with open(self.log_file_name, "a", encoding="utf-8") as logfile:
-                logfile.write("\n".join(self.content))
-                if self.content:
-                    logfile.write("\n")
+                for line in self.content:
+                    logfile.write(line)
+        self.content.clear()
 
     def reset(self, first_line=""):
-        """ Empty the log file, write first_line if provided
-        """
+        """ Empty the log file. optionally write a single header line. """
         with self.lock:
             with open(self.log_file_name, "w", encoding="utf-8") as logfile:
-                logfile.write(f"{first_line}\n")
+                if first_line:
+                    logfile.write(f"{first_line}\n")
+        self.content.clear()
