@@ -141,8 +141,7 @@ class Board:
         return groups
 
     def log_board_state(self, log):
-        """ Log the current state of the houses/hotels, free parking money
-        """
+        """ Log the current state of the houses/hotels, free parking money """
         log.add(f"Available houses/hotels: {self.available_houses}/{self.available_hotels}")
         if GameMechanics.free_parking_money:
             log.add(f"Free Parking Money: ${self.free_parking_money}")

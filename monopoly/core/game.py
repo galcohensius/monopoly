@@ -29,7 +29,6 @@ def monopoly_game(game_number_and_seeds: Tuple[int,int]) -> None:
     for turn_n in range(1, SimulationSettings.n_moves + 1):
         events_log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
         log_players_and_board_state(board, events_log, players)
-        board.log_board_state(events_log)
         events_log.add("")
 
         if _check_end_game_conditions(players, events_log, game_number, turn_n):

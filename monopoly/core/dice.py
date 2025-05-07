@@ -24,11 +24,8 @@ class Dice:
         self.log = log
     
     def roll(self):
-        """ Cast dice and return: return raw cast, the score, is it a double """
+        """ Cast dice and return: return raw cast, the sum, is it a double """
         cast = [self.local_random.randint(1, self.dice_sides) for _ in range(self.dice_count)]
-        self.log.add(f"roll: {sum(cast)}, ({cast}{',double' if is_dice_are_double(cast) else ''})")
-        
-        # if values are the same (double in case of 2 dice)
         return cast, sum(cast), is_dice_are_double(cast)
 
     def shuffle(self, object_to_shuffle):

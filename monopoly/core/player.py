@@ -13,41 +13,24 @@ class Player:
     """
 
     def __init__(self, name, settings):
-
-        # Player's name and behavioral settings
         self.name = name
         self.settings = settings
-
-        # Player's money (will be set up by the simulation)
         self.money = 0
-
-        # Player's position
         self.position = 0
-
-        # Person's roll double and jail status
-        # Is the player currently in jail
         self.in_jail = False
-        # number of doubles each player thrown so far
-        self.had_doubles = 0
-        # number of days in jail each player spent so far
-        self.days_in_jail = 0
-        # is the player holding a GOOJF card(s)
-        self.get_out_of_jail_chance = False
-        self.get_out_of_jail_comm_chest = False
-
-        # Owned properties
-        self.owned = []
+        self.had_doubles = 0  # number of doubles each player thrown so far
+        self.days_in_jail = 0  # number of days in jail each player spent so far
+        self.get_out_of_jail_chance = False  # is the player holding a GOOJF card(s)
+        self.get_out_of_jail_comm_chest = False  # is the player holding a GOOJF card(s)
+        self.owned = []  # Owned properties
+        self.is_bankrupt = False
+        self.other_notes = ""
 
         # List of properties the player wants to sell / buy
         # through trading with other players
         self.wants_to_sell = set()
         self.wants_to_buy = set()
 
-        # Bankrupt (game ended for this player)
-        self.is_bankrupt = False
-
-        # Placeholder for various flags used throughout the game
-        self.other_notes = ""
 
     def __str__(self):
         return self.name
@@ -86,7 +69,7 @@ class Player:
         if self.is_bankrupt:
             return MoveResult.BANKRUPT  # check if this is needed or this will writes bankrupt twice
 
-        log.add(f"=== {self.name} (${self.money}, at {board.cells[self.position].name}) goes: ===")
+        # log.add(f"=== {self.name} (${self.money}, at {board.cells[self.position].name}) goes: ===")
 
         # Before the throwing of the dice:
         # 1. Trade with other players. Keep trading until no trades are possible
@@ -100,7 +83,8 @@ class Player:
 
         # The move itself:
         # Player rolls the dice
-        _, dice_sum, is_double = dice.roll()
+        dice_cast, dice_sum, is_double = dice.roll()
+        log.add(f"{self.name} rolled: {dice_sum}, {dice_cast} {'(double)' if is_double else ''}")
 
         # Get doubles for the third time: go to jail
         if is_double and self.had_doubles == 2:
@@ -172,7 +156,6 @@ class Player:
 
         if is_double:
             self.had_doubles += 1
-            log.add(f"{self} rolled a double ({self.had_doubles} in a row) so they go again.")
             move_result_of_double_move = self.make_a_move(board, players, dice, log)
             return move_result_of_double_move
         # not a double: Reset doubles count
@@ -182,7 +165,7 @@ class Player:
     def handle_salary(self, board, log):
         """ Adding Salary to the player's money, according to the game's settings """
         self.money += board.settings.mechanics.salary
-        log.add(f" {self.name} receives salary ${board.settings.mechanics.salary}")
+        log.add(f"{self.name} receives salary ${board.settings.mechanics.salary}")
 
     def handle_going_to_jail(self, message, log):
         """ Start the jail time

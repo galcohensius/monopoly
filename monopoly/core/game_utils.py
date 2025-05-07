@@ -45,12 +45,9 @@ def log_players_and_board_state(board, log, players):
          For example: Player 'Hero': $1220 (net $1320), at 21 (E1 Kentucky Avenue)"""
     for player_n, player in enumerate(players):
         if not player.is_bankrupt:
-
             log.add(f"- {player.name}: " +
                     f"${int(player.money)} (net ${player.net_worth()}), " +
-                    f"at position {player.position} ({board.cells[player.position].name})")
-        else:
-            log.add(f"- Player {player_n}, '{player.name}': Bankrupt")
+                    f"at {board.cells[player.position].name} ({player.position})")
 
 
 def setup_players(board, dice):
@@ -82,7 +79,7 @@ def setup_players(board, dice):
 
 def setup_game(game_number, game_seed):
     events_log = Log(LogSettings.EVENTS_LOG_PATH, disabled=not LogSettings.KEEP_GAME_LOG)
-    events_log.add(f"= GAME {game_number} of {SimulationSettings.n_games} (seed = {game_seed}) =")
+    events_log.add(f"GAME {game_number} of {SimulationSettings.n_games} (seed = {game_seed})")
 
     bankruptcies_log = Log(LogSettings.BANKRUPTCIES_PATH)
 
