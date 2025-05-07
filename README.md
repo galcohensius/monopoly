@@ -91,9 +91,6 @@ As I mentioned, it's a hobby project, so no guarantees here. But if I ever get t
 - Whoever buys a bankrupt player's property has to unmortgage it right away or pay more.
 - How to mortgage property with hotels on it (this is somewhat ambiguous in official rules).
 
-### Simulation-Related:
-- Log out players' net worth.
-
 ### Game-Related:
 - Adjustable max jail time.
 
