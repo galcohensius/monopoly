@@ -60,7 +60,7 @@ For example:
 - Number of players (4)
 - Shuffling player order between simulations (True)
 - Starting money, either the same for all or per player going 1st, 2nd, etc. ($1500 for all)
-- Starting properties, allows to simulate specific mid-game situation (nothing for all, like in regular game start) 
+- Starting properties - allows simulating a specific mid-game situation (nothing for all, like in regular game start) 
  
 ### Rules-Related:
 - Number of dice (2)
@@ -90,9 +90,6 @@ As I mentioned, it's a hobby project, so no guarantees here. But if I ever get t
 - Auctions (none right now)
 - Whoever buys a bankrupt player's property has to unmortgage it right away or pay more.
 - How to mortgage property with hotels on it (this is somewhat ambiguous in official rules).
-
-### Simulation-Related:
-- Log out players' net worth.
 
 ### Game-Related:
 - Adjustable max jail time.
