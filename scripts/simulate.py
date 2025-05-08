@@ -22,6 +22,7 @@ def run_simulation(config: Type[SimulationSettings]) -> None:
         max_workers=config.multi_process,
         total=config.n_games,
         desc="Simulating Monopoly games",
+        chunksize=100
     )
 
     Analyzer().run_all()
