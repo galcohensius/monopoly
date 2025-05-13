@@ -1,6 +1,8 @@
+from monopoly.cards.card import Card
+
+
 class Deck:
-    """ Parent for Community Chest and Chance cards
-    """
+    """ Parent for Community Chest and Chance cards """
 
     def __init__(self, cards):
         # List of cards
@@ -19,15 +21,18 @@ class Deck:
             self.pointer = 0
         return drawn_card
 
-    def remove(self, card_to_remove):
-        """ Remove a card (used for GOOJF card)
-        """
-        self.cards.remove(card_to_remove)
-        # Make sure the pointer is still okay
-        if self.pointer == len(self.cards):
-            self.pointer = 0
+    def remove_card(self, card_to_remove):
+        """ Remove a card based on its text (for GOOJF). """
+        for i, card in enumerate(self.cards):
+            if isinstance(card, Card) and card.text == card_to_remove.text:
+                self.cards.pop(i)
+                if self.pointer > i:
+                    self.pointer -= 1
+                elif self.pointer == len(self.cards):
+                    self.pointer = 0
+                return
 
-    def add(self, card_to_add):
-        """ Add card (to put the removed GOOJF card back in once it's been used)
-        """
-        self.cards.insert(self.pointer - 1, card_to_add)
+
+    def add_card(self, card_to_add):
+        """ Add a card to the bottom of the deck. (after playing GOOJF) """
+        self.cards.append(card_to_add)

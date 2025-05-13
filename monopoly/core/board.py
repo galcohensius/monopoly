@@ -14,13 +14,10 @@ from settings import GameMechanics
 
 
 class Board:
-    """ Class collecting board-related information:
-    properties and their owners, build houses, etc.
-    """
+    """ Class collecting board-related information: properties and their owners, build houses, chance/community chest decks"""
 
     def __init__(self, settings):
-        """ Initialize board configuration: properties, special cells etc
-        """
+        """ Initialize board configuration: properties, special cells etc """
         # Keep a copy of game settings (to use in in-game calculations)
         self.settings = settings
 
@@ -80,61 +77,18 @@ class Board:
         # when the "Free Parking" rule is active, Keep track of the amount of money at the "Free parking money"
         self.free_parking_money = 0
 
-        # Available houses and hotels
         self.available_houses = GameMechanics.available_houses
         self.available_hotels = GameMechanics.available_hotels
 
         # Chance and Community Chest decks
         self.chance = Deck(CHANCE_CARDS.copy())
-        random.shuffle(self.chance.cards)
-
         self.chest = Deck(COMMUNITY_CHEST_CARDS.copy())
+        random.shuffle(self.chance.cards)
         random.shuffle(self.chest.cards)
-
-        # Chance deck
-        self.chance = Deck([
-            "Advance to Boardwalk",
-            "Advance to Go (Collect $200)",
-            "Advance to Illinois Avenue. If you pass Go, collect $200",
-            "Advance to St. Charles Place. If you pass Go, collect $200",
-            "Advance to the nearest Railroad. If owned, pay owner twice the rental to which they are otherwise entitled",
-            "Advance to the nearest Railroad. If owned, pay owner twice the rental to which they are otherwise entitled",
-            "Advance token to nearest Utility. If owned, throw dice and pay owner a total ten times amount thrown.",
-            "Bank pays you dividend of $50",
-            "Get Out of Jail Free",
-            "Go Back 3 Spaces",
-            "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200",
-            "Make general repairs on all your property. For each house pay $25. For each hotel pay $100",
-            "Speeding fine $15",
-            "Take a trip to Reading Railroad. If you pass Go, collect $200",
-            "You have been elected Chairman of the Board. Pay each player $50",
-            "Your building loan matures. Collect $150"
-        ])
-
-        # Community Chest deck
-        self.chest = Deck([
-            "Advance to Go (Collect $200)",
-            "Bank error in your favor. Collect $200",
-            "Doctor's fee. Pay $50",
-            "From sale of stock you get $50",
-            "Get Out of Jail Free",
-            "Go to Jail. Go directly to jail, do not pass Go, do not collect $200",
-            "Holiday fund matures. Receive $100",
-            "Income tax refund. Collect $20",
-            "It is your birthday. Collect $10 from every player",
-            "Life insurance matures. Collect $100",
-            "Pay hospital fees of $100",
-            "Pay school fees of $50",
-            "Receive $25 consultancy fee",
-            "You are assessed for street repair. $40 per house. $115 per hotel",
-            "You have won second prize in a beauty contest. Collect $10",
-            "You inherit $100"
-        ])
 
     def create_property_groups(self):
         """ self.groups is a convenient way to group cells by color/type,
-        so we don't have to check all properties on the board, to, for example,
-        update their monopoly status.
+        so we don't have to check all properties on the board, to, for example, update their monopoly status.
         This function populates self.groups with all properties
         """
         groups = {}

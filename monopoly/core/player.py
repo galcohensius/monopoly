@@ -31,7 +31,6 @@ class Player:
         self.wants_to_sell = set()
         self.wants_to_buy = set()
 
-
     def __str__(self):
         return self.name
 
@@ -84,7 +83,7 @@ class Player:
         # The move itself:
         # Player rolls the dice
         dice_cast, dice_sum, is_double = dice.roll()
-        log.add(f"{self.name} rolled: {dice_sum}, {dice_cast} {'(double)' if is_double else ''}")
+        log.add(f"{self.name} rolled {dice_cast} {'(double)' if is_double else ''}")
 
         # Get doubles for the third time: go to jail
         if is_double and self.had_doubles == 2:
@@ -112,12 +111,22 @@ class Player:
 
         # Player lands on "Chance"
         if isinstance(board.cells[self.position], Chance):
-            if self.handle_chance(board, players, log) == MoveResult.END_MOVE:
+            card = board.chance.draw()
+            log.add(f"{self} drew Chance card: '{card.text}'")
+            result = card.apply(self, board, players, log)
+            if card.text == "Get Out of Jail Free":
+                board.chance.remove_card(card)
+            if result == MoveResult.END_MOVE:
                 return MoveResult.END_MOVE
 
         # Player lands on "Community Chest"
         if isinstance(board.cells[self.position], CommunityChest):
-            if self.handle_community_chest(board, players, log) == MoveResult.END_MOVE:
+            card = board.chest.draw()
+            log.add(f"{self} drew Community Chest card: '{card.text}'")
+            result = card.apply(self, board, players, log)
+            if card.text == "Get Out of Jail Free":
+                board.chest.remove_card(card)
+            if result == MoveResult.END_MOVE:
                 return MoveResult.END_MOVE
 
         # Player lands on a property
@@ -180,6 +189,8 @@ class Player:
         """ Handle a player being in Jail
         Return True if the player stays in jail (to end his turn)
         """
+        from monopoly.cards.card import Card, get_out_of_jail_free
+
         # Get out of jail on rolling double
         if self.get_out_of_jail_chance or self.get_out_of_jail_comm_chest:
             log.add(f"{self} uses a GOOJF card")
@@ -187,10 +198,10 @@ class Player:
             self.days_in_jail = 0
             # Return the card to the deck
             if self.get_out_of_jail_chance:
-                board.chance.add("Get Out of Jail Free")
+                board.chance.add_card(Card("Get Out of Jail Free", get_out_of_jail_free)),
                 self.get_out_of_jail_chance = False
             else:
-                board.chest.add("Get Out of Jail Free")
+                board.chest.add_card(Card("Get Out of Jail Free", get_out_of_jail_free)),
                 self.get_out_of_jail_comm_chest = False
 
         # Get out of jail on rolling double
@@ -211,202 +222,6 @@ class Player:
             self.days_in_jail += 1
             return True
         return False
-
-    def handle_chance(self, board, players, log):
-        """ Draw and act on a Chance card Return True if the move should be over (go to jail) """
-        card = board.chance.draw()
-        log.add(f"{self} drew Chance card: '{card}'")
-
-        # Cards that send you to a certain location on board
-
-        if card == "Advance to Boardwalk":
-            log.add(f"{self} goes to {board.cells[39]}")
-            self.position = 39
-
-        elif card == "Advance to Go (Collect $200)":
-            log.add(f"{self} goes to {board.cells[0]}")
-            self.position = 0
-            self.handle_salary(board, log)
-
-        elif card == "Advance to Illinois Avenue. If you pass Go, collect $200":
-            log.add(f"{self} goes to {board.cells[24]}")
-            if self.position > 24:
-                self.handle_salary(board, log)
-            self.position = 24
-
-        elif card == "Advance to St. Charles Place. If you pass Go, collect $200":
-            log.add(f"{self} goes to {board.cells[11]}")
-            if self.position > 11:
-                self.handle_salary(board, log)
-            self.position = 11
-
-        elif card == "Take a trip to Reading Railroad. If you pass Go, collect $200":
-            log.add(f"{self} goes to {board.cells[5]}")
-            if self.position > 5:
-                self.handle_salary(board, log)
-            self.position = 5
-
-        # Going backwards
-
-        elif card == "Go Back 3 Spaces":
-            self.position -= 3
-            log.add(f"{self} goes to {board.cells[self.position]}")
-
-        # Sends to a type of location and affects the rent amount
-
-        elif card == "Advance to the nearest Railroad. " + \
-                "If owned, pay owner twice the rental to which they are otherwise entitled":
-            nearest_railroad = self.position
-            while (nearest_railroad - 5) % 10 != 0:
-                nearest_railroad += 1
-                nearest_railroad %= 40
-            log.add(f"{self} goes to {board.cells[nearest_railroad]}")
-            if self.position > nearest_railroad:
-                self.handle_salary(board, log)
-            self.position = nearest_railroad
-            self.other_notes = "double rent"
-
-        elif card == "Advance token to nearest Utility. " + \
-                "If owned, throw dice and pay owner a total ten times amount thrown.":
-            nearest_utility = self.position
-            while nearest_utility not in (12, 28):
-                nearest_utility += 1
-                nearest_utility %= 40
-            log.add(f"{self} goes to {board.cells[nearest_utility]}")
-            if self.position > nearest_utility:
-                self.handle_salary(board, log)
-            self.position = nearest_utility
-            self.other_notes = "10 times dice"
-
-        # Jail-related (go to jail or GOOJF card)
-
-        elif card == "Get Out of Jail Free":
-            log.add(f"{self} now has a 'Get Out of Jail Free' card")
-            self.get_out_of_jail_chance = True
-            # Remove the card from the deck
-            board.chance.remove("Get Out of Jail Free")
-
-        elif card == "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200":
-            self.handle_going_to_jail("got GTJ Chance card", log)
-            return MoveResult.END_MOVE
-
-        # Receiving money
-
-        elif card == "Bank pays you dividend of $50":
-            log.add(f"{self} gets $50")
-            self.money += 50
-
-        elif card == "Your building loan matures. Collect $150":
-            log.add(f"{self} gets $150")
-            self.money += 150
-
-        # Paying money (+ depending on property + to other players)
-
-        elif card == "Speeding fine $15":
-            self.pay_money(15, "bank", board, log)
-
-        elif card == "Make general repairs on all your property. For each house pay $25. " + \
-                "For each hotel pay $100":
-            repair_cost = sum(cell.has_houses * 25 + cell.has_hotel * 100 for cell in self.owned)
-            log.add(f"Repair cost: ${repair_cost}")
-            self.pay_money(repair_cost, "bank", board, log)
-
-        elif card == "You have been elected Chairman of the Board. Pay each player $50":
-            for other_player in players:
-                if other_player != self and not other_player.is_bankrupt:
-                    self.pay_money(50, other_player, board, log)
-                    if not self.is_bankrupt:
-                        log.add(f"{self} pays {other_player} $50")
-
-        return ""
-
-    def handle_community_chest(self, board, players, log):
-        """ Draw and act on a Community Chest card
-        Return True if the move should be over (go to jail)
-        """
-
-        card = board.chest.draw()
-        log.add(f"{self} drew Community Chest card: '{card}'")
-
-        # Moving to Go
-
-        if card == "Advance to Go (Collect $200)":
-            log.add(f"{self} goes to {board.cells[0]}")
-            self.position = 0
-            self.handle_salary(board, log)
-
-        # Jail related
-
-        elif card == "Get Out of Jail Free":
-            log.add(f"{self} now has a 'Get Out of Jail Free' card")
-            self.get_out_of_jail_comm_chest = True
-            # Remove the card from the deck
-            board.chest.remove("Get Out of Jail Free")
-
-        elif card == "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200":
-            self.handle_going_to_jail("got GTJ Community Chest card", log)
-            return MoveResult.END_MOVE
-
-        # Paying money
-
-        elif card == "Doctor's fee. Pay $50":
-            self.pay_money(50, "bank", board, log)
-
-        elif card == "Pay hospital fees of $100":
-            self.pay_money(100, "bank", board, log)
-
-        elif card == "Pay school fees of $50":
-            self.pay_money(50, "bank", board, log)
-
-        elif card == "You are assessed for street repair. $40 per house. $115 per hotel":
-            repair_cost = sum(cell.has_houses * 40 + cell.has_hotel * 115 for cell in self.owned)
-            log.add(f"Repair cost: ${repair_cost}")
-            self.pay_money(repair_cost, "bank", board, log)
-
-        # Receive money
-
-        elif card == "Bank error in your favor. Collect $200":
-            log.add(f"{self} gets $200")
-            self.money += 200
-
-        elif card == "From sale of stock you get $50":
-            log.add(f"{self} gets $50")
-            self.money += 50
-
-        elif card == "Holiday fund matures. Receive $100":
-            log.add(f"{self} gets $100")
-            self.money += 100
-
-        elif card == "Income tax refund. Collect $20":
-            log.add(f"{self} gets $20")
-            self.money += 20
-
-        elif card == "Life insurance matures. Collect $100":
-            log.add(f"{self} gets $100")
-            self.money += 100
-
-        elif card == "Receive $25 consultancy fee":
-            log.add(f"{self} gets $25")
-            self.money += 25
-
-        elif card == "You have won second prize in a beauty contest. Collect $10":
-            log.add(f"{self} gets $10")
-            self.money += 10
-
-        elif card == "You inherit $100""You inherit $100":
-            log.add(f"{self} gets $100")
-            self.money += 100
-
-        # Receiving money from other players
-
-        elif card == "It is your birthday. Collect $10 from every player":
-            for other_player in players:
-                if other_player != self and not other_player.is_bankrupt:
-                    other_player.pay_money(50, self, board, log)
-                    if not other_player.is_bankrupt:
-                        log.add(f"{other_player} pays {self} $10")
-
-        return ""
 
     def handle_income_tax(self, board, log):
         """ Handle Income tax: choose which option
@@ -486,13 +301,12 @@ class Player:
             # It is mortgaged: no action
             if landed_property.is_mortgaged:
                 log.add("Property is mortgaged, no rent")
-            # It is player's own property
+            # It is the player's own property
             elif landed_property.owner == self:
                 log.add("Own property, no rent")
             # Handle rent payments
             else:
-                log.add(f"{self.name} landed on a property, " +
-                        f"owned by {landed_property.owner}")
+                log.add(f"{self.name} landed on a property, owned by {landed_property.owner}")
                 rent_amount = landed_property.calculate_rent(dice)
                 if self.other_notes == "double rent":
                     rent_amount *= 2
@@ -534,7 +348,8 @@ class Player:
                     # 2. not be mortgaged
                     # 3. available houses/hotel in the bank
                     for other_cell in board.groups[cell.group]:
-                        if (other_cell.has_houses < cell.has_houses and not other_cell.has_hotel) or other_cell.is_mortgaged:
+                        if (
+                                other_cell.has_houses < cell.has_houses and not other_cell.has_hotel) or other_cell.is_mortgaged:
                             break
                     else:
                         if cell.has_houses != 4 and board.available_houses > 0 or \
