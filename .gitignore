@@ -163,5 +163,3 @@ cython_debug/
 # results dir
 results/
 /results/
-bankruptcies.tsv
-events.log
