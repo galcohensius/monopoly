@@ -3,7 +3,7 @@ from pathlib import Path
 from monopoly.log import Log
 
 project_root = Path(__file__).resolve().parent
-results_dir = project_root.parent / "results"
+results_dir = project_root / "results"
 
 
 class LogSettings:
