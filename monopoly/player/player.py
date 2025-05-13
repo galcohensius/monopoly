@@ -3,6 +3,7 @@
 from monopoly.board.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
 from monopoly.board.properties_group_constants import RAILROADS, UTILITIES, INDIGO, BROWN
 from monopoly.game.move_result import MoveResult
+from monopoly.player.other_notes import OtherNotes
 from settings import GameMechanics
 
 
@@ -24,7 +25,7 @@ class Player:
         self.get_out_of_jail_comm_chest = False  # is the player holding a GOOJF card(s)
         self.owned = []  # Owned properties
         self.is_bankrupt = False
-        self.other_notes = ""
+        self.other_notes = OtherNotes.NONE
 
         # List of properties the player wants to sell / buy
         # through trading with other players
@@ -157,7 +158,7 @@ class Player:
             self.handle_income_tax(board, log)
 
         # Reset the other_notes flag
-        self.other_notes = ""
+        self.other_notes = OtherNotes.NONE
 
         # If the player went bankrupt -> return string "bankrupt"
         if self.is_bankrupt:
@@ -308,10 +309,10 @@ class Player:
             else:
                 log.add(f"{self.name} landed on a property, owned by {landed_property.owner}")
                 rent_amount = landed_property.calculate_rent(dice)
-                if self.other_notes == "double rent":
+                if self.other_notes == OtherNotes.DOUBLE_RENT:
                     rent_amount *= 2
                     log.add(f"Per Chance card, rent is doubled (${rent_amount}).")
-                if self.other_notes == "10 times dice":
+                if self.other_notes == OtherNotes.TEN_TIMES_DICE:
                     # Divide by monopoly_coef to restore the dice throw
                     # Multiply that by 10
                     rent_amount = rent_amount // landed_property.monopoly_multiplier * 10

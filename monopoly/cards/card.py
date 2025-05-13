@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, List
 
 from monopoly.game.move_result import MoveResult
+from monopoly.player.other_notes import OtherNotes
 from monopoly.player.player import Player
 from monopoly.log import Log
 
@@ -29,7 +30,9 @@ def advance_to_nearest_utility(player: Player, board, players: List[Player], log
         target = 12
     else:
         target = 28
-    return advance_to_x(player, board, players, log, target)
+    advance_to_x(player, board, players, log, target)
+    player.other_notes = OtherNotes.TEN_TIMES_DICE
+    return MoveResult.CONTINUE
 
 
 def advance_to_nearest_railroad(player: Player, board, players: List[Player], log: Log) -> MoveResult:
@@ -42,7 +45,9 @@ def advance_to_nearest_railroad(player: Player, board, players: List[Player], lo
         target = 25
     else:
         target = 35
-    return advance_to_x(player, board, players, log, target)
+    advance_to_x(player, board, players, log, target)
+    player.other_notes = OtherNotes.DOUBLE_RENT
+    return MoveResult.CONTINUE
 
 def go_back_3_spaces(player: Player, board, players: List[Player], log: Log) -> MoveResult:
     player.position -= 3
