@@ -6,10 +6,11 @@ That includes:
 """
 import random
 
+from monopoly.board.properties_group_constants import BROWN, RAILROADS, LIGHTBLUE, UTILITIES, PINK, RED, ORANGE, YELLOW, \
+    GREEN, INDIGO
 from monopoly.cards.card import CHANCE_CARDS, COMMUNITY_CHEST_CARDS
-from monopoly.core.cell import Cell, GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
-from monopoly.core.constants import INDIGO, GREEN, YELLOW, RED, ORANGE, PINK, LIGHTBLUE, BROWN, RAILROADS, UTILITIES
-from monopoly.core.deck import Deck
+from monopoly.board.cell import Cell, GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
+from monopoly.cards.deck import Deck
 from settings import GameMechanics
 
 

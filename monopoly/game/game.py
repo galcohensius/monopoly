@@ -5,8 +5,8 @@
 """
 from typing import Tuple
 
-from monopoly.core.move_result import MoveResult
-from monopoly.core.game_utils import _check_end_game_conditions, log_players_and_board_state, \
+from monopoly.game.move_result import MoveResult
+from monopoly.game.game_utils import _check_end_game_conditions, log_players_and_board_state, \
     setup_players, setup_game
 from settings import SimulationSettings
 

@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from monopoly.log_settings import LogSettings
+from log_settings import LogSettings
 from settings import SimulationSettings, GameSettings
 
 

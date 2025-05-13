@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable, List
 
-from monopoly.core.move_result import MoveResult
-from monopoly.core.player import Player
+from monopoly.game.move_result import MoveResult
+from monopoly.player.player import Player
 from monopoly.log import Log
 
 

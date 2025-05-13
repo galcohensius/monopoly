@@ -1,4 +1,4 @@
-from monopoly.core.constants import UTILITIES
+from monopoly.board.properties_group_constants import UTILITIES
 
 
 class Cell:

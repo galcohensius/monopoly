@@ -1,11 +1,11 @@
 from typing import List
 
-from monopoly.core.board import Board
-from monopoly.core.dice import Dice
+from monopoly.board.board import Board
+from monopoly.game.dice import Dice
 
-from monopoly.core.player import Player
+from monopoly.player.player import Player
 from monopoly.log import Log
-from monopoly.log_settings import LogSettings
+from log_settings import LogSettings
 from settings import SimulationSettings, GameSettings, GameMechanics
 
 

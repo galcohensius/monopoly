@@ -1,8 +1,8 @@
 """ Player Class
 """
-from monopoly.core.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
-from monopoly.core.constants import INDIGO, BROWN, RAILROADS, UTILITIES
-from monopoly.core.move_result import MoveResult
+from monopoly.board.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
+from monopoly.board.properties_group_constants import RAILROADS, UTILITIES, INDIGO, BROWN
+from monopoly.game.move_result import MoveResult
 from settings import GameMechanics
 
 
