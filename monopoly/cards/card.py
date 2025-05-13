@@ -49,10 +49,12 @@ def advance_to_nearest_railroad(player: Player, board, players: List[Player], lo
     player.other_notes = OtherNotes.DOUBLE_RENT
     return MoveResult.CONTINUE
 
+
 def go_back_3_spaces(player: Player, board, players: List[Player], log: Log) -> MoveResult:
     player.position -= 3
     log.add(f"{player} goes to {board.cells[player.position]}")
     return MoveResult.CONTINUE
+
 
 def get_out_of_jail_free(player: Player, board, players: List[Player], log: Log) -> MoveResult:
     log.add(f"{player} now has a 'Get Out of Jail Free' card")
@@ -60,8 +62,9 @@ def get_out_of_jail_free(player: Player, board, players: List[Player], log: Log)
     # We'll need to handle removing this card from the deck elsewhere
     return MoveResult.CONTINUE
 
+
 def go_to_jail(player: Player, board, players: List[Player], log: Log) -> MoveResult:
-    player.handle_going_to_jail("got GTJ card", log)
+    player.handle_going_to_jail()
     return MoveResult.END_MOVE
 
 
@@ -70,12 +73,15 @@ def bank_pays(player: Player, board, players: List[Player], log: Log, amount: in
     player.money += amount
     return MoveResult.CONTINUE
 
+
 def player_pays_bank(player: Player, board, players: List[Player], log: Log, amount: int) -> MoveResult:
     log.add(f"{player} pays ${amount}")
     player.pay_money(amount, "bank", board, log)
     return MoveResult.CONTINUE
 
-def general_repairs(player: Player, board, players: List[Player], log: Log, house_cost: int, hotel_cost: int) -> MoveResult:
+
+def general_repairs(player: Player, board, players: List[Player], log: Log, house_cost: int,
+                    hotel_cost: int) -> MoveResult:
     repair_cost = sum(cell.has_houses * house_cost + cell.has_hotel * hotel_cost for cell in player.owned)
     log.add(f"Repair cost: ${repair_cost}")
     player.pay_money(repair_cost, "bank", board, log)
