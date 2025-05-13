@@ -6,7 +6,7 @@
 from typing import Tuple
 
 from monopoly.game.move_result import MoveResult
-from monopoly.game.game_utils import _check_end_game_conditions, log_players_and_board_state, \
+from monopoly.game.game_utils import _check_end_game_conditions, log_game_state, \
     setup_players, setup_game
 from settings import SimulationSettings
 
@@ -27,9 +27,7 @@ def monopoly_game(game_number_and_seeds: Tuple[int,int]) -> None:
     players = setup_players(board, dice)  # Set up players with their behavior settings, starting money and properties.
 
     for turn_n in range(1, SimulationSettings.n_moves + 1):
-        events_log.add(f"\n== GAME {game_number} Turn {turn_n} === (houses/hotels available: {board.available_houses}/{board.available_hotels}) ==")
-        log_players_and_board_state(board, events_log, players)
-        events_log.add("")
+        log_game_state(board, events_log, players, game_number, turn_n)
 
         if _check_end_game_conditions(players, events_log, game_number, turn_n):
             break
