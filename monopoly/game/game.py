@@ -35,7 +35,8 @@ def monopoly_game(game_number_and_seeds: Tuple[int,int]) -> None:
         # Players make their moves
         for player in players:
             if not player.is_bankrupt:
-                move_result = player.make_a_move(board, players, dice, events_log)
+                move_result, move_log = player.make_a_move(board, players, dice, events_log)
+                events_log.add(move_log)
                 if move_result == MoveResult.BANKRUPT:
                     bankruptcies_log.add(f"{game_number}\t{player}\t{turn_n}")
 
