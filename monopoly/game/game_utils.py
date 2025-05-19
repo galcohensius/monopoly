@@ -6,6 +6,7 @@ from monopoly.game.dice import Dice
 from monopoly.player.player import Player
 from monopoly.log import Log
 from log_settings import LogSettings
+from monopoly.player.player_utils import net_worth
 from settings import SimulationSettings, GameSettings, GameMechanics
 
 
@@ -49,7 +50,7 @@ def log_game_state(board, log, players, game_number, turn_n):
         for player_n, player in enumerate(players):
             if not player.is_bankrupt:
                 log.add(f"- {player.name}: " +
-                        f"${int(player.money)} (net ${player.net_worth()}), at {board.cells[player.position].name} ({player.position})")
+                        f"${int(player.money)} (net ${net_worth(player.money, player.owned)}), at {board.cells[player.position].name} ({player.position})")
         log.add("")
     else:
         log.add(f"\n= GAME {game_number} Turn {turn_n} =")

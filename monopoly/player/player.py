@@ -6,6 +6,7 @@ from monopoly.board.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Cha
 from monopoly.board.properties_group_constants import RAILROADS, UTILITIES, INDIGO, BROWN
 from monopoly.game.move_result import MoveResult
 from monopoly.player.other_notes import OtherNotes
+from monopoly.player.player_utils import net_worth
 from settings import GameMechanics
 
 
@@ -37,25 +38,6 @@ class Player:
     def __str__(self):
         return self.name
     
-    def net_worth(self, count_mortgaged_as_full_value=False):
-        """ Calculate player's net worth (cache + property + houses)
-        count_mortgaged_as_full_value determines if we consider property mortgaged status:
-        - True: count as full, for Income Tax calculation
-        - False: count partially, for net worth statistics
-        """
-        net_worth = int(self.money)
-        
-        for cell in self.owned:
-            
-            if cell.is_mortgaged and not count_mortgaged_as_full_value:
-                # Partially count mortgaged properties
-                net_worth += int(cell.cost_base * (1 - GameMechanics.mortgage_value))
-            else:
-                net_worth += cell.cost_base
-                net_worth += (cell.has_houses + cell.has_hotel) * cell.cost_house
-        
-        return net_worth
-    
     def make_a_move(self, board, players, dice, log, game_number, turn_n) -> Tuple[MoveResult, str]:
         """ Main function for a player to make a move
         Receives:
@@ -67,7 +49,7 @@ class Player:
         - MoveResult: CONTINUE, BANKRUPT, END_MOVE
         - log
         """
-        log_entry = f"G{game_number},T{turn_n}: {self.name}, \t${self.money}, (net ${self.net_worth()}), at {board.cells[self.position].name} ({self.position})"
+        log_entry = f"G{game_number},T{turn_n}: {self.name}, \t${self.money}, (net ${net_worth(self.money, self.owned)}), at {board.cells[self.position].name} ({self.position})"
         
         if self.is_bankrupt:
             return MoveResult.BANKRUPT, log_entry
@@ -76,8 +58,11 @@ class Player:
         # 1. Trade
         # 2. Unmortgage properties
         # 3. Build houses and hotels
-        while self.do_a_two_way_trade(players, board, log_entry):
-            pass
+        while True:
+            is_trade_found, trade_log = self.do_a_two_way_trade(players, board)
+            log_entry += trade_log
+            if not is_trade_found:
+                break
         while self.unmortgage_a_property(board, log):
             pass
         self.improve_properties(board, log)
@@ -228,7 +213,7 @@ class Player:
         tax_to_pay = min(
             GameMechanics.income_tax,
             int(GameMechanics.income_tax_percentage *
-                self.net_worth(count_mortgaged_as_full_value=True)))
+                net_worth(self.money, self.owned, count_mortgaged_as_full_value=True)))
         
         if tax_to_pay == GameMechanics.income_tax:
             log_entry += f", pays fixed Income tax {GameMechanics.income_tax}"
@@ -653,7 +638,7 @@ class Player:
             if len(owned_by_others) == 1:
                 self.wants_to_buy.add(owned_by_others[0])
     
-    def do_a_two_way_trade(self, players, board, log_entry):
+    def do_a_two_way_trade(self, players, board) -> Tuple[bool, str]:
         """ Look for and perform a two-way trade """
         
         def get_price_difference(gives, receives):
@@ -662,18 +647,14 @@ class Player:
             >0 means a player gives away more
             Return both absolute (in $), relative for a giver, relative for a receiver
             """
-            
             cost_gives = sum(cell.cost_base for cell in gives)
             cost_receives = sum(cell.cost_base for cell in receives)
-            
             diff_abs = cost_gives - cost_receives
-            
             diff_giver, diff_receiver = float("inf"), float("inf")
             if receives:
                 diff_giver = cost_gives / cost_receives
             if gives:
                 diff_receiver = cost_receives / cost_gives
-            
             return diff_abs, diff_giver, diff_receiver
         
         def remove_by_color(cells, color):
@@ -714,87 +695,79 @@ class Player:
             # Check the difference in value and make sure it is not larger that player's preference
             while player_gives and player_receives:
                 
-                diff_abs, diff_giver, diff_receiver = \
-                    get_price_difference(player_gives, player_receives)
+                diff_abs, diff_giver, diff_receiver = get_price_difference(player_gives, player_receives)
                 
                 # This player gives too much
-                if diff_abs > self.settings.trade_max_diff_absolute or \
-                        diff_giver > self.settings.trade_max_diff_relative:
+                if diff_abs > self.settings.trade_max_diff_absolute or diff_giver > self.settings.trade_max_diff_relative:
                     player_gives.pop()
                     continue
                 # The Other player gives too much
-                if -diff_abs > other_player.settings.trade_max_diff_absolute or \
-                        diff_receiver > other_player.settings.trade_max_diff_relative:
+                if -diff_abs > other_player.settings.trade_max_diff_absolute or diff_receiver > other_player.settings.trade_max_diff_relative:
                     player_receives.pop()
                     continue
                 break
             
             return player_gives, player_receives
         
+        log_entry = ""
         for other_player in players:
             # Selling/buying thing matches
-            if self.wants_to_buy.intersection(other_player.wants_to_sell) and \
-                    self.wants_to_sell.intersection(other_player.wants_to_buy):
+            if self.wants_to_buy.intersection(other_player.wants_to_sell) and self.wants_to_sell.intersection(other_player.wants_to_buy):
                 player_receives = list(self.wants_to_buy.intersection(other_player.wants_to_sell))
                 player_gives = list(self.wants_to_sell.intersection(other_player.wants_to_buy))
                 
-                # Work out a fair deal (don't trade the same color,
-                # get value difference within the limit)
-                player_gives, player_receives = \
-                    fair_deal(player_gives, player_receives, other_player)
+                # Work out a fair deal (don't trade the same color, get value difference within the limit)
+                player_gives, player_receives = fair_deal(player_gives, player_receives, other_player)
                 
                 # If their deal is not empty, go on
                 if player_receives and player_gives:
+                    price_difference, _, _ = get_price_difference(player_gives, player_receives)
                     
-                    # Price difference in traded properties
-                    price_difference, _, _ = \
-                        get_price_difference(player_gives, player_receives)
-                    
-                    # Player gives await more expensive item, other play has to pay
                     if price_difference > 0:
                         # Other guy can't pay
-                        if other_player.money - price_difference < \
-                                other_player.settings.unspendable_cash:
-                            return False
-                        other_player.money -= price_difference
-                        self.money += price_difference
-                    
-                    # Player gives cheaper stuff, has to pay
+                        if other_player.money - price_difference < other_player.settings.unspendable_cash:
+                            return False, log_entry
                     if price_difference < 0:
                         # This player can't pay
-                        if self.money - abs(price_difference) < \
-                                self.settings.unspendable_cash:
-                            return False
-                        other_player.money += abs(price_difference)
-                        self.money -= abs(price_difference)
+                        if self.money - abs(price_difference) < self.settings.unspendable_cash:
+                            return False, log_entry
                     
-                    # Property changes hands
-                    for cell_to_receive in player_receives:
-                        cell_to_receive.owner = self
-                        self.owned.append(cell_to_receive)
-                        other_player.owned.remove(cell_to_receive)
-                    for cell_to_give in player_gives:
-                        cell_to_give.owner = other_player
-                        other_player.owned.append(cell_to_give)
-                        self.owned.remove(cell_to_give)
-                    
-                    # Log the trade and compensation payment
-                    log_entry += f"Trade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
-                    if price_difference > 0:
-                        log_entry += f"{self} received price difference compensation ${abs(price_difference)} from {other_player}"
-                    if price_difference < 0:
-                        log_entry += f"{other_player} received price difference compensation ${abs(price_difference)} from {self}"
-                    
-                    # Recalculate monopoly and improvement status
-                    board.recalculate_monopoly_multipliers(player_gives[0])
-                    board.recalculate_monopoly_multipliers(player_receives[0])
-                    
-                    # Recalculate who wants to buy what
-                    # (for all players, it may affect their decisions too)
-                    for player in players:
-                        player.update_lists_of_properties_to_trade(board)
+                    log_entry += self.make_trade(board, other_player, player_gives, player_receives, players, price_difference)
                     
                     # Return True to run a trading function again
-                    return True
+                    return True, log_entry
         
-        return False
+        return False, log_entry
+    
+    def make_trade(self, board, other_player, player_gives, player_receives, players, price_difference) -> str:
+        log = ""
+        other_player.money -= price_difference
+        self.money += price_difference
+        
+        # Property changes hands
+        for cell_to_receive in player_receives:
+            cell_to_receive.owner = self
+            self.owned.append(cell_to_receive)
+            other_player.owned.remove(cell_to_receive)
+        for cell_to_give in player_gives:
+            cell_to_give.owner = other_player
+            other_player.owned.append(cell_to_give)
+            self.owned.remove(cell_to_give)
+        
+        # Log the trade and compensation payment
+        log += f"\nTrade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
+        if price_difference > 0:
+            log += f"{self} received price difference compensation ${abs(price_difference)} from {other_player}"
+        if price_difference < 0:
+            log += f"{other_player} received price difference compensation ${abs(price_difference)} from {self}"
+        
+        # Recalculate monopoly and improvement status
+        board.recalculate_monopoly_multipliers(player_gives[0])
+        board.recalculate_monopoly_multipliers(player_receives[0])
+        
+        # Recalculate who wants to buy what
+        # (for all players, it may affect their decisions too)
+        for player in players:
+            player.update_lists_of_properties_to_trade(board)
+        
+        return log
