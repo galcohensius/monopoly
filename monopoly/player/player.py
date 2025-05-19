@@ -64,9 +64,10 @@ class Player:
         - dice (to roll)
         - log handle
         Returns:
-            MoveResult: CONTINUE, BANKRUPT, END_MOVE
+        - MoveResult: CONTINUE, BANKRUPT, END_MOVE
+        - log
         """
-        log_entry = f"{game_number},{turn_n}: {self.name}, ${self.money}, (net ${self.net_worth()}), at {board.cells[self.position].name} ({self.position})"
+        log_entry = f"G{game_number},T{turn_n}: {self.name}, \t${self.money}, (net ${self.net_worth()}), at {board.cells[self.position].name} ({self.position})"
         
         if self.is_bankrupt:
             return MoveResult.BANKRUPT, log_entry
@@ -75,13 +76,13 @@ class Player:
         # 1. Trade
         # 2. Unmortgage properties
         # 3. Build houses and hotels
-        while self.do_a_two_way_trade(players, board, log):
+        while self.do_a_two_way_trade(players, board, log_entry):
             pass
         while self.unmortgage_a_property(board, log):
             pass
         self.improve_properties(board, log)
         
-        # The move itself:
+        # Dice roll:
         dice_cast, dice_sum, is_double = dice.roll()
         log_entry += f" roll {dice_cast}={dice_sum}{' (double)' if is_double else ''}"
         
@@ -115,7 +116,7 @@ class Player:
         if isinstance(board.cells[self.position], Chance):
             card = board.chance.draw()
             result, card_msg = card.apply(self, board, players)
-            log_entry += f", drew: '{card.text}', {card_msg}"
+            log_entry += f", drew:{card.text}{card_msg}"
             if card.text == "Get Out of Jail Free":
                 board.chance.remove_card(card)
             if result == MoveResult.END_MOVE:
@@ -125,7 +126,7 @@ class Player:
         if isinstance(board.cells[self.position], CommunityChest):
             card = board.chest.draw()
             result, card_msg = card.apply(self, board, players)
-            log_entry += f", drew: '{card.text}', {card_msg}"
+            log_entry += f", drew:{card.text}{card_msg}"
             if card.text == "Get Out of Jail Free":
                 board.chest.remove_card(card)
             if result == MoveResult.END_MOVE:
@@ -134,14 +135,10 @@ class Player:
         # Player lands on a property
         if isinstance(board.cells[self.position], Property):
             log_entry += self.handle_landing_on_property(board, players, dice)
-        
-        # Player lands on "Go To Jail"
-        if isinstance(board.cells[self.position], GoToJail):
+        elif isinstance(board.cells[self.position], GoToJail):
             self.handle_going_to_jail()
             return MoveResult.END_MOVE, log_entry
-        
-        # Player lands on "Free Parking"
-        if isinstance(board.cells[self.position], FreeParking):
+        elif isinstance(board.cells[self.position], FreeParking):
             # If Free Parking Money house rule is on: get the money
             if GameMechanics.free_parking_money:
                 log_entry += f", ({self} gets ${board.free_parking_money} from Free Parking"
@@ -168,7 +165,7 @@ class Player:
         if is_double:
             self.had_doubles += 1
             move_result_of_double_move, sub_log_entry = self.make_a_move(board, players, dice, log, game_number, turn_n)
-            return move_result_of_double_move, log_entry + f", roll again (#double:{self.had_doubles}), " + sub_log_entry
+            return move_result_of_double_move, log_entry + f", roll again: " + sub_log_entry
         # not a double: Reset doubles count
         self.had_doubles = 0
         return MoveResult.END_MOVE, log_entry
@@ -295,23 +292,23 @@ class Player:
         # Property has an owner
         else:
             if landed_property.owner == self:
-                message += ", Own property, no rent"
+                message += ", own property"
             elif landed_property.is_mortgaged:
-                message += ", Property is mortgaged, no rent"
+                message += ", property is mortgaged"
             # Handle rent payments
             else:
-                message += f", landed on a property owned by {landed_property.owner}"
+                message += f", owned by {landed_property.owner}"
                 rent_amount = landed_property.calculate_rent(dice)
                 if self.other_notes == OtherNotes.DOUBLE_RENT:
                     rent_amount *= 2
-                    message += f", per Chance card rent is doubled (${rent_amount})."
+                    message += f", per Chance card rent X2 (${rent_amount})."
                 elif self.other_notes == OtherNotes.TEN_TIMES_DICE:
                     rent_amount = rent_amount // landed_property.monopoly_multiplier * 10  # Divide by monopoly_multiplier to restore the dice throw, Multiply that by 10
                     message += f", per Chance card rent is 10x dice throw (${rent_amount})."
                 
                 message += self.pay_money(rent_amount, landed_property.owner, board)
-                if not self.is_bankrupt:
-                    message += f", {self} pays {landed_property.owner} rent ${rent_amount}"
+                # if not self.is_bankrupt:
+                #     message += f", {self} pays {landed_property.owner} rent ${rent_amount}"
         return message
     
     def improve_properties(self, board, log):
@@ -656,9 +653,8 @@ class Player:
             if len(owned_by_others) == 1:
                 self.wants_to_buy.add(owned_by_others[0])
     
-    def do_a_two_way_trade(self, players, board, log):
-        """ Look for and perform a two-way trade
-        """
+    def do_a_two_way_trade(self, players, board, log_entry):
+        """ Look for and perform a two-way trade """
         
         def get_price_difference(gives, receives):
             """ Calculate price difference between items player
@@ -685,8 +681,7 @@ class Player:
             return new_cells
         
         def fair_deal(player_gives, player_receives, other_player):
-            """ Remove properties from to_sell and to_buy to make it as fair as possible
-            """
+            """ Remove properties from to_sell and to_buy to make it as fair as possible """
             
             # First, get all colors in both sides of the deal
             color_receives = [cell.group for cell in player_receives]
@@ -784,18 +779,11 @@ class Player:
                         self.owned.remove(cell_to_give)
                     
                     # Log the trade and compensation payment
-                    log.add(f"Trade: {self} gives {[str(cell) for cell in player_gives]}, " +
-                            f"receives {[str(cell) for cell in player_receives]} " +
-                            f"from {other_player}")
-                    
+                    log_entry += f"Trade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
                     if price_difference > 0:
-                        log.add(f"{self} received " +
-                                f"price difference compensation ${abs(price_difference)} " +
-                                f"from {other_player}")
+                        log_entry += f"{self} received price difference compensation ${abs(price_difference)} from {other_player}"
                     if price_difference < 0:
-                        log.add(f"{other_player} received " +
-                                f"price difference compensation ${abs(price_difference)} " +
-                                f"from {self}")
+                        log_entry += f"{other_player} received price difference compensation ${abs(price_difference)} from {self}"
                     
                     # Recalculate monopoly and improvement status
                     board.recalculate_monopoly_multipliers(player_gives[0])

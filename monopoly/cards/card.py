@@ -26,7 +26,7 @@ def advance_to_x(player, board, players, target: int, collect_if_pass=True) -> t
         salary_msg = player.handle_salary(board)
         msg_parts.append(salary_msg)
     player.position = target
-    msg_parts.append(f"→ moves to {board.cells[target].name}")
+    msg_parts.append(f", moves to {board.cells[target].name}")
     return MoveResult.CONTINUE, " ".join(msg_parts)
 
 
@@ -38,7 +38,7 @@ def advance_to_nearest_utility(player: Player, board, players: List[Player]) -> 
         target = 28
     move_result, msg = advance_to_x(player, board, players, target)
     player.other_notes = OtherNotes.TEN_TIMES_DICE
-    return move_result, msg + ", nearest_utility"
+    return move_result, msg
 
 
 def advance_to_nearest_railroad(player: Player, board, players: List[Player]) -> Tuple[MoveResult, str]:
@@ -53,12 +53,12 @@ def advance_to_nearest_railroad(player: Player, board, players: List[Player]) ->
         target = 35
     move_result, msg = advance_to_x(player, board, players, target)
     player.other_notes = OtherNotes.DOUBLE_RENT
-    return move_result, msg + ", nearest railroad"
+    return move_result, msg
 
 
 def go_back_3_spaces(player: Player, board, players: List[Player]) -> Tuple[MoveResult, str]:
     player.position -= 3
-    msg = f" → goes back 3 to {board.cells[player.position].name}"
+    msg = f", goes back 3 to {board.cells[player.position].name}"
     return MoveResult.CONTINUE, msg
 
 
@@ -110,12 +110,12 @@ def collect_from_each_player(player: Player, board, players: List[Player], amoun
 CHANCE_CARDS: List[Card] = [
     Card("Advance to Go (Collect $200)", lambda p, b, pl: advance_to_x(p, b, pl, target=0, collect_if_pass=True)),
     Card("Advance to Boardwalk", lambda p, b, pl: advance_to_x(p, b, pl, target=39, collect_if_pass=True)),
-    Card("Advance to Illinois Avenue.", lambda p, b, pl: advance_to_x(p, b, pl, target=24, collect_if_pass=True)),
-    Card("Advance to St. Charles Place.", lambda p, b, pl: advance_to_x(p, b, pl, target=11, collect_if_pass=True)),
+    Card("Advance to Illinois Avenue", lambda p, b, pl: advance_to_x(p, b, pl, target=24, collect_if_pass=True)),
+    Card("Advance to St. Charles Place", lambda p, b, pl: advance_to_x(p, b, pl, target=11, collect_if_pass=True)),
     Card("Advance to Reading Railroad", lambda p, b, pl: advance_to_x(p, b, pl, target=5, collect_if_pass=True)),
-    Card("Advance token to nearest Utility. If owned, pay diceX10", advance_to_nearest_utility),
-    Card("Advance to the nearest Railroad.", advance_to_nearest_railroad),
-    Card("Advance to the nearest Railroad.", advance_to_nearest_railroad),
+    Card("Advance token to nearest Utility. If owned pay diceX10", advance_to_nearest_utility),
+    Card("Advance to the nearest Railroad", advance_to_nearest_railroad),
+    Card("Advance to the nearest Railroad", advance_to_nearest_railroad),
     Card("Bank pays you dividend of $50", lambda p, b, pl: bank_pays(p, b, pl, 50)),
     Card("Get Out of Jail Free", get_out_of_jail_free),
     Card("Go Back 3 Spaces", go_back_3_spaces),

@@ -26,7 +26,7 @@ def monopoly_game(game_number_and_seeds: Tuple[int, int]) -> None:
     players = setup_players(board, dice)  # Set up players with their behavior settings, starting money and properties.
     
     for turn_n in range(1, SimulationSettings.n_moves + 1):
-        events_log.add(f"= GAME {game_number} Turn {turn_n} =")
+        events_log.add(f"GAME {game_number} Turn {turn_n}:")
 
         if _check_end_game_conditions(players, events_log, game_number, turn_n):
             break
