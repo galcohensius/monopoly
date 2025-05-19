@@ -44,13 +44,15 @@ def _check_end_game_conditions(players: List[Player], log: Log, game_number, tur
 def log_game_state(board, log, players, game_number, turn_n):
     """ Current player's position, money and net worth, looks like this:
          For example: Player 'Hero': $1220 (net $1320), at 21 (E1 Kentucky Avenue)"""
-    log.add(f"\n== GAME {game_number} Turn {turn_n} === (houses/hotels available: {board.available_houses}/{board.available_hotels}) ==")
-    for player_n, player in enumerate(players):
-        if not player.is_bankrupt:
-            log.add(f"- {player.name}: " +
-                    f"${int(player.money)} (net ${player.net_worth()}), " +
-                    f"at {board.cells[player.position].name} ({player.position})")
-    log.add("")
+    if turn_n % 10 == 1:
+        log.add(f"\n== GAME {game_number} Turn {turn_n} === (houses/hotels available: {board.available_houses}/{board.available_hotels}) ==")
+        for player_n, player in enumerate(players):
+            if not player.is_bankrupt:
+                log.add(f"- {player.name}: " +
+                        f"${int(player.money)} (net ${player.net_worth()}), at {board.cells[player.position].name} ({player.position})")
+        log.add("")
+    else:
+        log.add(f"\n= GAME {game_number} Turn {turn_n} =")
 
 
 def setup_players(board, dice):
