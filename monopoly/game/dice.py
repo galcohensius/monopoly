@@ -12,7 +12,6 @@ def is_dice_are_double(cast):
 
 
 class Dice:
-    """ Class to have dice settings, in case we want to play with that """
     def __init__(self, seed, dice_count, dice_sides, log):
         self.dice_count = dice_count
         self.dice_sides = dice_sides
@@ -24,7 +23,7 @@ class Dice:
         self.log = log
     
     def roll(self):
-        """ Cast dice and return: return raw cast, the sum, is it a double """
+        """ Roll the dice: return the result of each dice, the sum, is it a double """
         cast = [self.local_random.randint(1, self.dice_sides) for _ in range(self.dice_count)]
         return cast, sum(cast), is_dice_are_double(cast)
 
