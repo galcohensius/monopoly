@@ -6,7 +6,7 @@ from monopoly.board.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Cha
 from monopoly.board.properties_group_constants import RAILROADS, UTILITIES, INDIGO, BROWN
 from monopoly.game.move_result import MoveResult
 from monopoly.player.other_notes import OtherNotes
-from monopoly.player.player_utils import net_worth, get_ordinal_str
+from monopoly.player.player_utils import net_worth, get_ordinal_str, get_price_difference
 from settings import GameMechanics
 
 
@@ -22,7 +22,7 @@ class Player:
         self.money = 0
         self.position = 0
         self.in_jail = False
-        self.had_doubles = 0  # number of doubles each player thrown so far
+        self.doubles_this_turn = 0  # number of doubles each player thrown so far
         self.days_in_jail = 0  # number of days in jail each player spent so far
         self.get_out_of_jail_chance = False  # is the player holding a GOOJF card(s)
         self.get_out_of_jail_comm_chest = False  # is the player holding a GOOJF card(s)
@@ -71,8 +71,7 @@ class Player:
         dice_cast, dice_sum, is_double = dice.roll()
         log_entry += f" roll {dice_cast}={dice_sum}"
 
-        # Get doubles for the third time: go to jail
-        if is_double and self.had_doubles == 2:
+        if is_double and self.doubles_this_turn == 2:
             self.handle_going_to_jail()
             return MoveResult.END_MOVE, log_entry
 
@@ -148,11 +147,11 @@ class Player:
             return MoveResult.BANKRUPT, log_entry
 
         if is_double:
-            self.had_doubles += 1
+            self.doubles_this_turn += 1
             move_result_of_double_move, sub_log_entry = self.make_a_move(board, players, dice, log, game_number, turn_n)
             return move_result_of_double_move, log_entry + f", roll again: " + sub_log_entry
         # not a double: Reset doubles count
-        self.had_doubles = 0
+        self.doubles_this_turn = 0
         return MoveResult.END_MOVE, log_entry
 
     def handle_salary(self, board):
@@ -164,7 +163,7 @@ class Player:
         """ Start the jail time """
         self.position = 10
         self.in_jail = True
-        self.had_doubles = 0
+        self.doubles_this_turn = 0
         self.days_in_jail = 0
 
     def is_player_stay_in_jail(self, dice_roll_is_double, board) -> tuple[bool, str]:
@@ -354,7 +353,8 @@ class Player:
                 board.available_houses -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built {get_ordinal_str(cell_to_improve.has_houses)} house on {cell_to_improve} for ${cell_to_improve.cost_house}")
+                log.add(
+                    f"{self} built {get_ordinal_str(cell_to_improve.has_houses)} house on {cell_to_improve} for ${cell_to_improve.cost_house}")
 
             # Building a hotel
             elif cell_to_improve.has_houses == 4:
@@ -405,7 +405,8 @@ class Player:
                     # Look at other cells in this group and check if they have more houses or hotels?
                     # If so, this property cannot be de-improved
                     for other_cell in board.groups[cell.group]:
-                        if cell.has_hotel == 0 and (other_cell.has_houses > cell.has_houses or other_cell.has_hotel > 0):
+                        if cell.has_hotel == 0 and (
+                                other_cell.has_houses > cell.has_houses or other_cell.has_hotel > 0):
                             break
                     else:
                         can_be_downgrade.append(cell)
@@ -435,17 +436,14 @@ class Player:
                 can_be_downgrade.pop()
 
         def get_list_of_properties_to_mortgage():
-            """ Put together a list of properties a player can sell houses from.
-            """
-            list_to_mortgage = []
+            """ Put together a list of properties a player can sell houses from. """
+            _list_to_mortgage = []
             for cell in self.owned:
                 if not cell.is_mortgaged:
-                    list_to_mortgage.append(
-                        (int(cell.cost_base * GameMechanics.mortgage_value), cell))
-
+                    _list_to_mortgage.append((int(cell.cost_base * GameMechanics.mortgage_value), cell))
             # It will be popped from the end, so the first to sell should be last
-            list_to_mortgage.sort(key=lambda x: -x[0])
-            return list_to_mortgage
+            _list_to_mortgage.sort(key=lambda x: x[0], reverse=True)
+            return _list_to_mortgage
 
         # Cycle through all possible de-improvements until
         # all houses/hotels are sold or enough money is raised
@@ -458,7 +456,8 @@ class Player:
 
             sell_price = cell_to_deimprove.cost_house // 2
 
-            # Selling a hotel: if there are 4 houses available, sell just the hotel, else sell the hotel and 4 houses.
+            # Selling a hotel: if there are 4 houses available, sell just the hotel,
+            # else sell the hotel and 4 houses of all the group.
             if cell_to_deimprove.has_hotel:
                 if board.available_houses >= 4:
                     cell_to_deimprove.has_hotel = 0
@@ -468,7 +467,7 @@ class Player:
                     out.append(f", sells a hotel on {cell_to_deimprove}, raising ${sell_price}")
                     self.money += sell_price
                 else:
-                    # TODO: need to tear down all 3 hotels in this situation.
+                    # TODO: must tear down all the hotels in the group.
                     cell_to_deimprove.has_hotel = 0
                     cell_to_deimprove.has_houses = 0
                     board.available_hotels += 1
@@ -479,7 +478,8 @@ class Player:
             else:
                 cell_to_deimprove.has_houses -= 1
                 board.available_houses += 1
-                out.append(f", sells {get_ordinal_str(cell_to_deimprove.has_houses + 1)} house on {cell_to_deimprove}, raising ${sell_price}")
+                out.append(
+                    f", sells {get_ordinal_str(cell_to_deimprove.has_houses + 1)} house on {cell_to_deimprove}, raising ${sell_price}")
                 self.money += sell_price
 
         # Mortgage properties
@@ -626,22 +626,6 @@ class Player:
     def do_a_two_way_trade(self, players, board) -> Tuple[bool, str]:
         """ Look for and perform a two-way trade """
 
-        def get_price_difference(gives, receives):
-            """ Calculate price difference between items player
-            is about to give minus what he is about to receive.
-            >0 means a player gives away more
-            Return both absolute (in $), relative for a giver, relative for a receiver
-            """
-            cost_gives = sum(cell.cost_base for cell in gives)
-            cost_receives = sum(cell.cost_base for cell in receives)
-            diff_abs = cost_gives - cost_receives
-            diff_giver, diff_receiver = float("inf"), float("inf")
-            if receives:
-                diff_giver = cost_gives / cost_receives
-            if gives:
-                diff_receiver = cost_receives / cost_gives
-            return diff_abs, diff_giver, diff_receiver
-
         def remove_by_color(cells, color):
             new_cells = [cell for cell in cells if cell.group != color]
             return new_cells
@@ -662,7 +646,6 @@ class Player:
             # so both players would want to receive them
             # If they are present, remove it from the guy who has the longer list
             # If a list has the same length, remove both questionable items
-
             for questionable_color in [UTILITIES, INDIGO, BROWN]:
                 if questionable_color in color_receives and questionable_color in color_gives:
                     if len(player_receives) > len(player_gives):
@@ -679,7 +662,6 @@ class Player:
 
             # Check the difference in value and make sure it is not larger that player's preference
             while player_gives and player_receives:
-
                 diff_abs, diff_giver, diff_receiver = get_price_difference(player_gives, player_receives)
 
                 # This player gives too much
@@ -743,10 +725,10 @@ class Player:
 
         # Log the trade and compensation payment
         log += f"\nTrade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
-        if price_difference > 0:
-            log += f"{self} received price difference compensation ${abs(price_difference)} from {other_player}"
-        if price_difference < 0:
-            log += f"{other_player} received price difference compensation ${abs(price_difference)} from {self}"
+        if price_difference >= 0:
+            log += f", {self} received price difference compensation ${abs(price_difference)} from {other_player}"
+        else:
+            log += f", {other_player} received price difference compensation ${abs(price_difference)} from {self}"
 
         # Recalculate monopoly and improvement status
         board.recalculate_monopoly_multipliers(player_gives[0])

@@ -23,3 +23,20 @@ def get_ordinal_str(house_number: int) -> str:
     """Return '1st', '2nd', … for 1-4; otherwise '<n>th'."""
     ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
     return ordinal.get(house_number, f"{house_number}th")
+
+
+def get_price_difference(gives, receives):
+    """ Calculate the price difference between items
+    that the player is about to give minus what he is about to receive.
+    A positive difference means a player gives away more.
+    Return absolute_diff($), relative for a giver, relative for a receiver
+    """
+    cost_gives = sum(cell.cost_base for cell in gives)
+    cost_receives = sum(cell.cost_base for cell in receives)
+    diff_abs = cost_gives - cost_receives
+    relative_diff_giver, relative_diff_receiver = float("inf"), float("inf")
+    if receives:
+        relative_diff_giver = cost_gives / cost_receives
+    if gives:
+        relative_diff_receiver = cost_receives / cost_gives
+    return diff_abs, relative_diff_giver, relative_diff_receiver
