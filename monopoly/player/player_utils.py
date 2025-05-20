@@ -1,3 +1,4 @@
+from monopoly.board.cell import Property
 from settings import GameMechanics
 
 
@@ -40,3 +41,13 @@ def get_price_difference(gives, receives):
     if gives:
         relative_diff_receiver = cost_receives / cost_gives
     return diff_abs, relative_diff_giver, relative_diff_receiver
+
+
+def get_unmortgaged_properties(properties_owned) -> list[tuple[int, Property]]:
+    """ list of properties a player can sell houses from. """
+    _list_to_mortgage = []
+    for cell in properties_owned:
+        if not cell.is_mortgaged:
+            _list_to_mortgage.append((int(cell.cost_base * GameMechanics.mortgage_value), cell))
+    _list_to_mortgage.sort(key=lambda x: x[0], reverse=True) # Sort from expensive to cheap
+    return _list_to_mortgage

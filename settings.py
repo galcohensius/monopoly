@@ -34,9 +34,9 @@ class SimulationSettings:
     seed: int = 0  # Random seed to start simulation with
     multi_process: int = 4  # Number of parallel processes to use in the simulation
     
-    # Cash that will be considered cannot go bankrupt. See this paper that estimates the probability that the game
-    # will last forever. https://www.researchgate.net/publication
-    # /224123876_Estimating_the_probability_that_the_game_of_Monopoly_never_ends
+    # Cash that will be considered too rich for going bankrupt (from this situation players will just get richer).
+    # See this paper that estimates the probability a game will never end:
+    # https://www.researchgate.net/publication/224123876_Estimating_the_probability_that_the_game_of_Monopoly_never_ends
     never_bankrupt_cash: int = 5000
 
 
@@ -73,8 +73,7 @@ class GameSettings:
     # Randomly shuffle the order of players each game
     shuffle_players = True
     
-    # Initial money (a single integer if it is the same for everybody or a dict of player names and cash)
-    # for example, either starting_money = 1500 or a dictionary with player names as keys and int values
+    # Initial money
     starting_money = {
         HERO: 1500,
         PLAYER_2: 1500,
@@ -83,7 +82,8 @@ class GameSettings:
     }
     
     # Initial properties (a dictionary with player names as keys and a list of property numbers as values)
-    # Property numbers correspond to indices in `board.cells`
+    # Property numbers correspond to indices in `Board`
+    # for example, HERO: [31, 32, 34] means that the hero starts with the 3 GREEN properties.
     starting_properties = {
         HERO: [],
         PLAYER_2: [],

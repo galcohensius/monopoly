@@ -3,7 +3,8 @@ from monopoly.board.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Cha
 from monopoly.board.properties_group_constants import RAILROADS, UTILITIES, INDIGO, BROWN
 from monopoly.game.move_result import MoveResult
 from monopoly.player.other_notes import OtherNotes
-from monopoly.player.player_utils import net_worth, get_ordinal_str, get_price_difference
+from monopoly.player.player_utils import net_worth, get_ordinal_str, get_price_difference, \
+    get_unmortgaged_properties
 from settings import GameMechanics
 
 
@@ -432,16 +433,6 @@ class Player:
                 # Remove the most expensive option
                 can_be_downgrade.pop()
 
-        def get_list_of_properties_to_mortgage():
-            """ Put together a list of properties a player can sell houses from. """
-            _list_to_mortgage = []
-            for cell in self.owned:
-                if not cell.is_mortgaged:
-                    _list_to_mortgage.append((int(cell.cost_base * GameMechanics.mortgage_value), cell))
-            # It will be popped from the end, so the first to sell should be last
-            _list_to_mortgage.sort(key=lambda x: x[0], reverse=True)
-            return _list_to_mortgage
-
         # Cycle through all possible de-improvements until
         # all houses/hotels are sold or enough money is raised
         while True:
@@ -480,11 +471,11 @@ class Player:
                 self.money += sell_price
 
         # Mortgage properties
-        list_to_mortgage = get_list_of_properties_to_mortgage()
+        list_of_unmortgage_properties = get_unmortgaged_properties(self.owned)
 
-        while list_to_mortgage and self.money < required_amount:
+        while list_of_unmortgage_properties and self.money < required_amount:
             # Pick a property to mortgage from the list
-            mortgage_price, cell_to_mortgage = list_to_mortgage.pop()
+            mortgage_price, cell_to_mortgage = list_of_unmortgage_properties.pop()
 
             # Mortgage this property
             cell_to_mortgage.is_mortgaged = True
