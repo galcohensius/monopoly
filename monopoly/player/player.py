@@ -468,6 +468,7 @@ class Player:
                     out.append(f", sells a hotel on {cell_to_deimprove}, raising ${sell_price}")
                     self.money += sell_price
                 else:
+                    # TODO: need to tear down all 3 hotels in this situation.
                     cell_to_deimprove.has_hotel = 0
                     cell_to_deimprove.has_houses = 0
                     board.available_hotels += 1
