@@ -1,7 +1,4 @@
-""" Player Class
-"""
 from typing import Tuple
-
 from monopoly.board.cell import GoToJail, LuxuryTax, IncomeTax, FreeParking, Chance, CommunityChest, Property
 from monopoly.board.properties_group_constants import RAILROADS, UTILITIES, INDIGO, BROWN
 from monopoly.game.move_result import MoveResult

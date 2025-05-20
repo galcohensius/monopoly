@@ -57,8 +57,7 @@ def log_game_state(board, log, players, game_number, turn_n):
 
 
 def setup_players(board, dice):
-    players = [Player(player_name, player_setting)
-               for player_name, player_setting in GameSettings.players_list]
+    players = [Player(player_name, player_setting) for player_name, player_setting in GameSettings.players_list]
 
     if GameSettings.shuffle_players:
         dice.shuffle(players)  # dice has a thread-safe copy of random.shuffle

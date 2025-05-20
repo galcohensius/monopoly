@@ -31,26 +31,24 @@ def advance_to_x(player, board, players, target: int, collect_if_pass=True) -> t
 
 
 def advance_to_nearest_utility(player: Player, board, players: List[Player]) -> Tuple[MoveResult, str]:
-    # utilities at (12, 28)
     if player.position < 12 or (player.position > 28):
-        target = 12
+        target = 12 # Electric Company
     else:
-        target = 28
+        target = 28 # Water Works
     move_result, msg = advance_to_x(player, board, players, target)
     player.other_notes = OtherNotes.TEN_TIMES_DICE
     return move_result, msg
 
 
 def advance_to_nearest_railroad(player: Player, board, players: List[Player]) -> Tuple[MoveResult, str]:
-    # railroads at (5, 15, 25, 35)
     if player.position < 5 or (player.position > 35):
-        target = 5
+        target = 5 # Reading Railroad
     elif player.position < 15:
-        target = 15
+        target = 15 # Pennsylvania Railroad
     elif player.position < 25:
-        target = 25
+        target = 25 # B&O Railroad
     else:
-        target = 35
+        target = 35 # Short Line Railroad
     move_result, msg = advance_to_x(player, board, players, target)
     player.other_notes = OtherNotes.DOUBLE_RENT
     return move_result, msg
