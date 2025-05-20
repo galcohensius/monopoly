@@ -328,8 +328,7 @@ class Player:
                                 other_cell.has_houses < cell.has_houses and not other_cell.has_hotel) or other_cell.is_mortgaged:
                             break
                     else:
-                        if cell.has_houses != 4 and board.available_houses > 0 or \
-                                cell.has_houses == 4 and board.available_hotels > 0:
+                        if cell.has_houses != 4 and board.available_houses > 0 or cell.has_houses == 4 and board.available_hotels > 0:
                             can_be_improved.append(cell)
             # Sort the list by the cost of a house
             can_be_improved.sort(key=lambda x: x.cost_house)
@@ -380,9 +379,7 @@ class Player:
         
         for cell in self.owned:
             if cell.is_mortgaged:
-                cost_to_unmortgage = \
-                    cell.cost_base * GameMechanics.mortgage_value + \
-                    cell.cost_base * GameMechanics.mortgage_fee
+                cost_to_unmortgage = cell.cost_base * GameMechanics.mortgage_value + cell.cost_base * GameMechanics.mortgage_fee
                 if self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
                     log.add(f"{self} unmortgages {cell} for ${cost_to_unmortgage}")
                     self.money -= cost_to_unmortgage
