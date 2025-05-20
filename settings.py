@@ -42,7 +42,7 @@ class SimulationSettings:
 
 @dataclass(frozen=True)
 class StandardPlayerSettings:
-    unspendable_cash: int = 200  # Amount of money the player wants to keep unspent (money safety pillow)
+    unspendable_cash: int = 200  # Amount of money the player wants to keep unspent (a money safety pillow)
     ignore_property_groups: FrozenSet[str] = frozenset()  # Group of properties do not buy, i.e.{"RED", "GREEN"}
     
     is_willing_to_make_trades: bool = True
