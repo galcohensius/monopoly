@@ -28,18 +28,15 @@ class Analyzer:
         result.columns = ['Losers', 'count']
 
         # {remaining players: games}
-        remaining_players = {len(GameSettings.players_list) - row['Losers']: row['count'] for index, row in
-                             result.iterrows()}
+        remaining_players = {len(GameSettings.players_list) - row['Losers']: row['count'] for index, row in result.iterrows()}
         # Add games with no losers (all players remained)
-        remaining_players[len(GameSettings.players_list)] = \
-            SimulationSettings.n_games - sum(remaining_players.values())
-
+        remaining_players[len(GameSettings.players_list)] = SimulationSettings.n_games - sum(remaining_players.values())
+        
         # Games with a clear winner (just a single player remains)
         clear_winner = 0
         if 1 in remaining_players:
             clear_winner = remaining_players[1]
-        print(f"Games that had clear winner: {clear_winner} / {SimulationSettings.n_games} " +
-              f"({100 * clear_winner / SimulationSettings.n_games:.1f}%)")
+        print(f"Games that had clear winner: {clear_winner} / {SimulationSettings.n_games} ({100 * clear_winner / SimulationSettings.n_games:.1f}%)")
 
         # Number of players by the end of simulation
         print(f"Number of remaining players after: {SimulationSettings.n_moves} turns:")
@@ -80,6 +77,4 @@ class Analyzer:
 
             survival_rate = survivals / SimulationSettings.n_games
             margin = 1.96 * (survival_rate * (1 - survival_rate) / SimulationSettings.n_games) ** 0.5
-            print(f"  - {player_name}: {survivals} " +
-                  f"({survival_rate * 100:.1f} "
-                  f"+- {margin * 100:.1f}%)")
+            print(f"  - {player_name}: {survivals} ({survival_rate * 100:.1f} +- {margin * 100:.1f}%)")
