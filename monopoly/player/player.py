@@ -85,12 +85,10 @@ class Player:
         # Get salary if we passed go on the way
         if self.position >= 40:
             log_entry += self.handle_salary(board)
-        # Get the correct position if we passed GO
-        self.position %= 40
+            self.position %= 40
         log_entry += f", goes to: {board.cells[self.position].name}"
 
         # Handle special cells:
-
         # Both Chance and Community Chest are processed first, as they may send the player to a property
         # Chance is before "Community Chest" as Chance can send to Community Chest
 
@@ -688,8 +686,7 @@ class Player:
                         if self.money - abs(price_difference) < self.settings.unspendable_cash:
                             return False, log_entry
 
-                    log_entry += self.make_trade(board, other_player, player_gives, player_receives, players,
-                                                 price_difference)
+                    log_entry += self.make_trade(board, other_player, player_gives, player_receives, players, price_difference)
 
                     # Return True to run a trading function again
                     return True, log_entry
