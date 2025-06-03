@@ -11,7 +11,7 @@ from settings import GameMechanics
 class Player:
     """ Class to contain player-related into and actions:
     - money, position, owned property
-    - actions to buy property of handle Chance cards etc.
+    - actions to buy property of handle Chance cards, etc.
     """
 
     def __init__(self, name, settings):
@@ -73,7 +73,7 @@ class Player:
             self.handle_going_to_jail()
             return MoveResult.END_MOVE, log_entry
 
-        # Player is currently in jail
+        # The Player is currently in jail
         if self.in_jail:
             stayed, jail_msg = self.is_player_stay_in_jail(is_double, board)
             log_entry += jail_msg
@@ -270,7 +270,7 @@ class Player:
                 message += f", landed on a {landed_property}, he refuses to buy it"
                 # TODO: Bank auctions the property
 
-        # Property has an owner
+        # The Property has an owner
         else:
             if landed_property.owner == self:
                 message += ", own property"
@@ -296,10 +296,11 @@ class Player:
         """
 
         def get_next_property_to_improve():
-            """ Decide what is the next property to improve:
-            - it should be eligible for improvement (is monopoly, not mortgaged,
-            has not more houses than other cells in the group)
-            - start with the cheapest
+            """ Decide the next property to improve: cheapest, eligible property
+            - eligible for improvement means:
+                1. Part of a monopoly,
+                2. Not mortgaged and
+                3. It does not hold more houses than other cells in the group.
             """
             can_be_improved = []
             for cell in self.owned:
@@ -314,9 +315,9 @@ class Player:
                         and cell.group not in (RAILROADS, UTILITIES)
                 ):
                     # In order for this cell to be able to be improved, it needs that all cells in the group:
-                    # 1. have at least as many houses as this cell (or a hotel)
-                    # 2. not be mortgaged
-                    # 3. available houses/hotel in the bank
+                    # 1. Have at least as many houses as this cell (or a hotel)
+                    # 2. Not be mortgaged
+                    # 3. Available houses/hotel in the bank
                     for other_cell in board.groups[cell.group]:
                         if (
                                 other_cell.has_houses < cell.has_houses and not other_cell.has_hotel) or other_cell.is_mortgaged:
@@ -365,10 +366,9 @@ class Player:
                 log.add(f"{self} built a hotel on {cell_to_improve} for ${cell_to_improve.cost_house}")
 
     def unmortgage_a_property(self, board, log):
-        """ Go through the list of properties and unmortgage one, if there is enough money to do so.
+        """ Go through the list of properties and unmortgage one if there is enough money to do so.
         Return True if any unmortgaging took place (to call it again)
         """
-
         for cell in self.owned:
             if cell.is_mortgaged:
                 cost_to_unmortgage = cell.cost_base * GameMechanics.mortgage_value + cell.cost_base * GameMechanics.mortgage_fee
@@ -506,7 +506,7 @@ class Player:
             return max_raisable
 
         def transfer_all_properties(payee, board) -> str:
-            """ Part of bankruptcy procedure, transfer all mortgaged property to the creditor """
+            """ Part of the bankruptcy procedure, transfer all mortgaged property to the creditor """
             out_msg: list[str] = []
             while self.owned:
                 cell_to_transfer = self.owned.pop()
@@ -604,7 +604,7 @@ class Player:
             # If there are properties to buy - no trades
             if not_owned:
                 continue
-            # If I own 1: I am ready to sell it
+            # If I own 1, I am ready to sell it
             if len(owned_by_me) == 1:
                 self.wants_to_sell.add(owned_by_me[0])
             # If someone owns 1 (and I own the rest): I want to buy it
