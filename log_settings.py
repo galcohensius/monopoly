@@ -9,7 +9,7 @@ results_dir = project_root / "results"
 class LogSettings:
     KEEP_GAME_LOG = True
     EVENTS_LOG_PATH = results_dir / "events.log"
-    BANKRUPTCIES_PATH = results_dir / "bankruptcies.tsv"
+    BANKRUPTCIES_PATH = results_dir / "bankruptcies.csv"
 
     @classmethod
     def init_logs(cls):
@@ -21,6 +21,6 @@ class LogSettings:
 
         # 2) bankruptcies summary log
         bankruptcies_log = Log(cls.BANKRUPTCIES_PATH)
-        bankruptcies_log.reset("game_number\tplayer_bankrupt\tturn")
+        bankruptcies_log.reset("game_number,player_bankrupt,turn")
 
         return events_log, bankruptcies_log

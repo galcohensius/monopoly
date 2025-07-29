@@ -56,14 +56,14 @@ class Player:
         while True:
             unmortgaged, unmortgage_log = self.unmortgage_a_property(board, log)
             if unmortgage_log:
-                log_entry += f", {unmortgage_log}"
+                log_entry += f"{unmortgage_log}"
             if not unmortgaged:
                 break
 
         # Handle property improvements
         improvement_log = self.improve_properties(board, log)
         if improvement_log:
-            log_entry += f", {improvement_log}"
+            log_entry += f"{improvement_log}"
 
         return log_entry
 
@@ -78,39 +78,46 @@ class Player:
         - MoveResult: CONTINUE, BANKRUPT, END_MOVE
         - log
         """
-        log_entry = f"G{game_number},T{turn_n}: {self.name}, ${self.money}, (net ${net_worth(self.money, self.owned)}), at {board.cells[self.position].name} ({self.position})"
+        log_entry: list[str] = [
+            f"G{game_number},T{turn_n}: {self.name}, ${self.money}, "
+            f"(net ${net_worth(self.money, self.owned)}), "
+            f"at {board.cells[self.position].name} ({self.position})"
+        ]
 
         if self.is_bankrupt:
-            return MoveResult.BANKRUPT, log_entry
+            final_log = ", ".join(log_entry)
+            return MoveResult.BANKRUPT, final_log
 
         # pre-dice actions: Trade, Unmortgage, Improve properties
         pre_dice_log = self.handle_pre_dice_actions(board, players, log)
         if pre_dice_log:
-            log_entry += f", {pre_dice_log}"
+            log_entry.append(pre_dice_log)
 
         # Dice roll:
         dice_cast, dice_sum, is_double = dice.roll()
-        log_entry += f" roll {dice_cast}={dice_sum}"
+        log_entry.append(f"roll {dice_cast}={dice_sum}")
 
         if is_double and self.doubles_this_turn == 2:
             self.handle_going_to_jail()
-            return MoveResult.END_MOVE, log_entry
+            final_log = ", ".join(log_entry)
+            return MoveResult.END_MOVE, final_log
 
         # The Player is currently in jail
         if self.in_jail:
             stayed, jail_msg = self.is_player_stay_in_jail(is_double, board)
-            log_entry += jail_msg
+            log_entry.append(jail_msg)
             if stayed:
-                return MoveResult.END_MOVE, log_entry
+                final_log = ", ".join(log_entry)
+                return MoveResult.END_MOVE, final_log
 
         # Player moves to a cell
         self.position += dice_sum
         # Get salary if we passed go on the way
         if self.position >= 40:
             salary_msg = self.handle_salary(board)
-            log_entry += salary_msg
+            log_entry.append(salary_msg)
             self.position %= 40
-        log_entry += f", goes to: {board.cells[self.position].name}"
+        log_entry.append(f"goes to: {board.cells[self.position].name}")
 
         # Handle special cells:
         # Both Chance and Community Chest are processed first, as they may send the player to a property
@@ -120,34 +127,37 @@ class Player:
         if isinstance(board.cells[self.position], Chance):
             card = board.chance.draw()
             result, card_msg = card.apply(self, board, players)
-            log_entry += f", drew:{card.text}{card_msg}"
+            log_entry.append(f"drew:{card.text}{card_msg}")
             if card.text == "Get Out of Jail Free":
                 board.chance.remove_card(card)
             if result == MoveResult.END_MOVE:
-                return MoveResult.END_MOVE, log_entry
+                final_log = ", ".join(log_entry)
+                return MoveResult.END_MOVE, final_log
 
         # Player lands on "Community Chest"
         if isinstance(board.cells[self.position], CommunityChest):
             card = board.chest.draw()
             result, card_msg = card.apply(self, board, players)
-            log_entry += f", drew:{card.text}{card_msg}"
+            log_entry.append(f"drew:{card.text}{card_msg}")
             if card.text == "Get Out of Jail Free":
                 board.chest.remove_card(card)
             if result == MoveResult.END_MOVE:
-                return MoveResult.END_MOVE, log_entry
+                final_log = ", ".join(log_entry)
+                return MoveResult.END_MOVE, final_log
 
         # Player lands on a property
         if isinstance(board.cells[self.position], Property):
             property_msg = self.handle_landing_on_property(board, players, dice)
             if property_msg:
-                log_entry += f", {property_msg}"
+                log_entry.append(f"{property_msg}")
         elif isinstance(board.cells[self.position], GoToJail):
             self.handle_going_to_jail()
-            return MoveResult.END_MOVE, log_entry
+            final_log = ", ".join(log_entry)
+            return MoveResult.END_MOVE, final_log
         elif isinstance(board.cells[self.position], FreeParking):
             # If Free Parking Money house rule is on: get the money
             if GameMechanics.free_parking_money:
-                log_entry += f", ({self} gets ${board.free_parking_money} from Free Parking"
+                log_entry.append(f"({self} gets ${board.free_parking_money} from Free Parking")
                 self.money += board.free_parking_money
                 board.free_parking_money = 0
 
@@ -155,33 +165,37 @@ class Player:
         if isinstance(board.cells[self.position], LuxuryTax):
             self.pay_money(GameMechanics.luxury_tax, "bank", board)
             if not self.is_bankrupt:
-                log_entry += f", pays Luxury Tax ${GameMechanics.luxury_tax}"
+                log_entry.append(f"pays Luxury Tax ${GameMechanics.luxury_tax}")
 
         # Player lands on "Income Tax"
         if isinstance(board.cells[self.position], IncomeTax):
-            tax_msg = self.handle_income_tax(board, "")
-            if tax_msg:
-                log_entry += f", {tax_msg}"
+            tax_msg = self.handle_income_tax(board)
+            log_entry.append(tax_msg)
 
         # Reset the other_notes flag
         self.other_notes = OtherNotes.NONE
 
         # If the player went bankrupt -> return string "bankrupt"
         if self.is_bankrupt:
-            return MoveResult.BANKRUPT, log_entry
+            final_log = ", ".join(log_entry)
+            return MoveResult.BANKRUPT, final_log
 
         if is_double:
             self.doubles_this_turn += 1
-            move_result_of_double_move, sub_log_entry = self.make_a_move(board, players, dice, log, game_number, turn_n)
-            return move_result_of_double_move, log_entry + f", roll again: " + sub_log_entry
+            next_result, next_log = self.make_a_move(board, players, dice, log, game_number, turn_n)
+            log_entry.append(f"roll again: {next_log}")
+            final_log = ", ".join(log_entry)
+            return next_result, final_log
+
         # not a double: Reset doubles count
         self.doubles_this_turn = 0
-        return MoveResult.END_MOVE, log_entry
+        final_log = ", ".join(log_entry)
+        return MoveResult.END_MOVE, final_log
 
     def handle_salary(self, board):
         """ Adding Salary to the player's money, according to the game's settings """
         self.money += board.settings.mechanics.salary
-        return f", receives salary ${board.settings.mechanics.salary}"
+        return f"receives salary ${board.settings.mechanics.salary}"
 
     def handle_going_to_jail(self):
         """ Start the jail time """
@@ -198,7 +212,7 @@ class Player:
         msg_parts: list[str] = []
 
         if self.get_out_of_jail_chance or self.get_out_of_jail_comm_chest:
-            msg_parts.append(f", uses a GOOJF card")
+            msg_parts.append(f"uses a GOOJF card")
             self.in_jail = False
             self.days_in_jail = 0
             # Return the card to the deck
@@ -211,46 +225,44 @@ class Player:
 
         # Get out of jail on rolling double
         elif dice_roll_is_double:
-            msg_parts.append(f", rolled a double, leaves jail for free")
+            msg_parts.append(f"rolled a double, leaves jail for free")
             self.in_jail = False
             self.days_in_jail = 0
         # Get out of jail and pay a fine
         elif self.days_in_jail == 2:  # It's your third day
-            msg_parts.append(f", failed on the 3rd attempt, pays {GameMechanics.exit_jail_fine} and leaves jail")
+            msg_parts.append(f"failed on the 3rd attempt, pays {GameMechanics.exit_jail_fine} and leaves jail")
             pay_msg = self.pay_money(GameMechanics.exit_jail_fine, "bank", board)
             msg_parts.append(pay_msg)
             self.in_jail = False
             self.days_in_jail = 0
         # Stay in jail for another turn
         else:
-            msg_parts.append(f", stays in jail")
+            msg_parts.append(f"stays in jail")
             self.days_in_jail += 1
             return True, " ".join(msg_parts)
         return False, " ".join(msg_parts)
 
-    def handle_income_tax(self, board, log_entry):
-        """ Handle Income tax: choose which option
-        (fix or %) is less money and go with it
-        """
-        # Choose smaller between fixed rate and percentage
+    def handle_income_tax(self, board):
+        """ Handle Income tax: choose which option (fix or %) is less money and go with it """
         tax_to_pay = min(
             GameMechanics.income_tax,
-            int(GameMechanics.income_tax_percentage *
-                net_worth(self.money, self.owned, count_mortgaged_as_full_value=True)))
+            int(GameMechanics.income_tax_percentage * net_worth(self.money, self.owned, count_mortgaged_as_full_value=True))
+        )
+
+        pay_msg = self.pay_money(tax_to_pay, "bank", board)
 
         if tax_to_pay == GameMechanics.income_tax:
-            log_entry += f", pays fixed Income tax {GameMechanics.income_tax}"
+            return f"pays fixed income tax ${tax_to_pay}{pay_msg}"
         else:
-            log_entry += f", pays {GameMechanics.income_tax_percentage * 100:.0f}% Income tax {tax_to_pay}"
-        self.pay_money(tax_to_pay, "bank", board)
+            pct = int(GameMechanics.income_tax_percentage * 100)
+            return f"pays {pct}% income tax ${tax_to_pay}{pay_msg}"
 
     def handle_landing_on_property(self, board, players, dice) -> str:
         """ Landing on property: either buy it or pay rent """
         message = ""
 
         def is_willing_to_buy_property(property_to_buy):
-            """ Check if the player is willing to buy an unowned property
-            """
+            """ Check if the player is willing to buy an unowned property """
             # Player has money lower than an unspendable minimum
             if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
                 return False
@@ -281,7 +293,7 @@ class Player:
         if landed_property.owner is None:
             if is_willing_to_buy_property(landed_property):
                 buy_property(landed_property)
-                message += f", buy for ${landed_property.cost_base}"
+                message += f"buy for ${landed_property.cost_base}"
 
                 # Recalculate all monopolies / can build flags
                 board.recalculate_monopoly_multipliers(landed_property)
@@ -292,25 +304,25 @@ class Player:
                     player.update_lists_of_properties_to_trade(board)
 
             else:
-                message += f", landed on a {landed_property}, he refuses to buy it"
+                message += f"landed on a {landed_property}, he refuses to buy it"
                 # TODO: Bank auctions the property
 
         # The Property has an owner
         else:
             if landed_property.owner == self:
-                message += ", own property"
+                message += "own property"
             elif landed_property.is_mortgaged:
-                message += ", property is mortgaged"
+                message += "property is mortgaged"
             # Handle rent payments
             else:
-                message += f", owned by {landed_property.owner}"
+                message += f"owned by {landed_property.owner}"
                 rent_amount = landed_property.calculate_rent(dice)
                 if self.other_notes == OtherNotes.DOUBLE_RENT:
                     rent_amount *= 2
-                    message += f", per Chance card rent X2 (${rent_amount})."
+                    message += f"per Chance card rent X2 (${rent_amount})."
                 elif self.other_notes == OtherNotes.TEN_TIMES_DICE:
                     rent_amount = rent_amount // landed_property.monopoly_multiplier * 10  # Divide by monopoly_multiplier to restore the dice throw, Multiply that by 10
-                    message += f", per Chance card rent is 10x dice throw (${rent_amount})."
+                    message += f"per Chance card rent is 10x dice throw (${rent_amount})."
 
                 message += self.pay_money(rent_amount, landed_property.owner, board)
         return message
@@ -479,14 +491,14 @@ class Player:
                     cell_to_deimprove.has_houses = 4
                     board.available_hotels += 1
                     board.available_houses -= 4
-                    out.append(f", sells a hotel on {cell_to_deimprove}, raising ${sell_price}")
+                    out.append(f"sells a hotel on {cell_to_deimprove}, raising ${sell_price}")
                     self.money += sell_price
                 else:
                     # TODO: must tear down all the hotels in the group.
                     cell_to_deimprove.has_hotel = 0
                     cell_to_deimprove.has_houses = 0
                     board.available_hotels += 1
-                    out.append(f", sells a hotel and all houses on {cell_to_deimprove}, raising ${sell_price * 5}")
+                    out.append(f"sells a hotel and all houses on {cell_to_deimprove}, raising ${sell_price * 5}")
                     self.money += sell_price * 5
 
             # Selling a house
@@ -494,7 +506,7 @@ class Player:
                 cell_to_deimprove.has_houses -= 1
                 board.available_houses += 1
                 out.append(
-                    f", sells {get_ordinal_str(cell_to_deimprove.has_houses + 1)} house on {cell_to_deimprove}, raising ${sell_price}")
+                    f"sells {get_ordinal_str(cell_to_deimprove.has_houses + 1)} house on {cell_to_deimprove}, raising ${sell_price}")
                 self.money += sell_price
 
         # Mortgage properties
@@ -507,14 +519,12 @@ class Player:
             # Mortgage this property
             cell_to_mortgage.is_mortgaged = True
             self.money += mortgage_price
-            out.append(f", mortgages {cell_to_mortgage}, raising ${mortgage_price}")
+            out.append(f"mortgages {cell_to_mortgage}, raising ${mortgage_price}")
 
         return " ".join(out)
 
     def pay_money(self, amount, payee, board) -> str:
-        """ Function to pay money to another player (or bank)
-        This is where Bankruptcy is triggered.
-        """
+        """ Function to pay money to another player (or bank), This is where Bankruptcy is triggered. """
         out: list[str] = []
 
         def count_max_raisable_money():
@@ -550,8 +560,8 @@ class Player:
                     cell_to_transfer.is_mortgaged = False
 
                 board.recalculate_monopoly_multipliers(cell_to_transfer)
-                out_msg.append(f", transfers {cell_to_transfer} to {payee}")
-            return " ".join(out_msg)
+                out_msg.append(f"transfers {cell_to_transfer} to {payee}")
+            return ", ".join(out_msg)
 
         # Regular transaction
         if amount < self.money:
@@ -560,14 +570,14 @@ class Player:
                 payee.money += amount
             elif payee == "bank" and GameMechanics.free_parking_money:
                 board.free_parking_money += amount
-            out.append(f", pays ${amount} to {payee}")
+            out.append(f"pays ${amount} to {payee}")
             return " ".join(out)
 
         max_raisable_money = count_max_raisable_money()
         # Can pay but need to sell some things first
         if amount < max_raisable_money:
             out.append(
-                f", has ${self.money}, can pay ${amount}, but needs to mortgage/sell some things for that")
+                f"has ${self.money}, can pay ${amount}, but needs to mortgage/sell some things for that")
             out.append(self.raise_money(amount, board))
             self.money -= amount
             if payee != "bank":
@@ -577,7 +587,7 @@ class Player:
 
         # Bankruptcy (can't pay even after selling and mortgaging all)
         else:
-            out.append(f", has to pay ${amount}, max they can raise is ${max_raisable_money}")
+            out.append(f"has to pay ${amount}, max they can raise is ${max_raisable_money}")
             self.is_bankrupt = True
             out.append(f"{self} is bankrupt")
 
@@ -598,7 +608,7 @@ class Player:
             self.wants_to_sell = set()
             self.wants_to_buy = set()
 
-        return " ".join(out)
+        return ", ".join(out)
 
     def update_lists_of_properties_to_trade(self, board):
         """ Update list of properties player is willing to sell / buy """
@@ -740,9 +750,9 @@ class Player:
         # Log the trade and compensation payment
         log += f"Trade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
         if price_difference >= 0:
-            log += f", {self} received price difference compensation ${abs(price_difference)} from {other_player}"
+            log += f"{self} received price difference compensation ${abs(price_difference)} from {other_player}"
         else:
-            log += f", {other_player} received price difference compensation ${abs(price_difference)} from {self}"
+            log += f"{other_player} received price difference compensation ${abs(price_difference)} from {self}"
 
         # Recalculate monopoly and improvement status
         board.recalculate_monopoly_multipliers(player_gives[0])

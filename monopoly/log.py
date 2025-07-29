@@ -39,7 +39,7 @@ class Log:
         self.content.clear()
 
     def reset(self, first_line=""):
-        """ Empty the log file. optionally write a single header line. """
+        """ Empty the log file. Optionally, write a single header line. """
         with self.lock:
             with open(self.log_file_name, "w", encoding="utf-8") as logfile:
                 if first_line:

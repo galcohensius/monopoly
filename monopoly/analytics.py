@@ -12,7 +12,7 @@ class Analyzer:
     """
 
     def __init__(self):
-        self.df = pd.read_csv(LogSettings.BANKRUPTCIES_PATH, sep='\t')
+        self.df = pd.read_csv(LogSettings.BANKRUPTCIES_PATH, sep=',')
 
     def run_all(self):
         """ Run all analysis functions """

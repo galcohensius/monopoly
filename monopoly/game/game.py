@@ -37,7 +37,7 @@ def monopoly_game(game_number_and_seeds: Tuple[int, int]) -> None:
                 move_result, move_log = player.make_a_move(board, players, dice, events_log, game_number, turn_n)
                 events_log.add(move_log)
                 if move_result == MoveResult.BANKRUPT:
-                    bankruptcies_log.add(f"{game_number}\t{player}\t{turn_n}")
+                    bankruptcies_log.add(f"{game_number},{player},{turn_n}")
     
     board.log_current_map(events_log)  # log the final game state
     events_log.save()
