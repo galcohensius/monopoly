@@ -12,19 +12,15 @@ class Cell:
 
 
 class GoToJail(Cell):
-    """ Class for Go To Jail cell
-    not much going on here
-    """
+    """ Class for Go To Jail cell, not much going on here """
 
 
 class LuxuryTax(Cell):
-    """ Class for LuxuryTax
-    """
+    """ Class for LuxuryTax """
 
 
 class IncomeTax(Cell):
-    """ Class for IncomeTax
-    """
+    """ Class for IncomeTax """
 
 
 class FreeParking(Cell):
@@ -32,18 +28,15 @@ class FreeParking(Cell):
 
 
 class Chance(Cell):
-    """ Class for Chance
-    """
+    """ Class for Chance """
 
 
 class CommunityChest(Cell):
-    """ Class for Community Chest
-    """
+    """ Class for Community Chest """
 
 
 class Property(Cell):
-    """ Property Class (for Properties, Rails, Utilities)
-    """
+    """ Property Class (for Properties, Rails, Utilities) """
 
     def __init__(self, name, cost_base, rent_base, cost_house, rent_house, group):
         """

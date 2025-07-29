@@ -108,23 +108,28 @@ class Board:
             log.add(f"Free Parking Money: ${self.free_parking_money}")
 
     def log_current_map(self, log):
-        """ Log the current situation on the board,
-        who owns what, monopolies, improvements, etc.
-        """
+        """ Log the current situation on the board, who owns what, monopolies, improvements, etc. """
         log.add("\n== BOARD ==")
         for cell in self.cells:
             if not isinstance(cell, Property):
                 continue
-            improvements = "none"
-            if cell.has_hotel == 1:
-                improvements = "hotel"
-            if cell.has_houses > 0:
-                improvements = f"{cell.has_houses} house(s)"
+            improvements_text = (
+                f", Improvements: {self._describe_improvements(cell)}"
+                if cell.group not in (RAILROADS, UTILITIES)
+                else ""
+            )
+
             # Log property name, owner, rent multipliers, improvements:
-            # G1 Pacific Avenue, Owner: Exp, Rent multiplier: 2, Can improve: False, Improvements: hotel
-            log.add(f"- {cell.name}, Owner: {cell.owner}, " +
-                    f"Rent multiplier: {cell.monopoly_multiplier}, Improvements: {improvements}")
+            log.add(f"- {cell.name}, Owner: {cell.owner}, " + f"Rent multiplier: {cell.monopoly_multiplier} {improvements_text}")
         log.add("")
+
+    @staticmethod
+    def _describe_improvements(prop: Property) -> str:
+        if prop.has_hotel:
+            return "hotel"
+        elif prop.has_houses:
+            return f"{prop.has_houses} house(s)"
+        return "none"
 
     def recalculate_monopoly_multipliers(self, changed_cell):
         """ Go through all properties in the property group and update flags:
