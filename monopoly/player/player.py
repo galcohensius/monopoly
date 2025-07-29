@@ -36,6 +36,37 @@ class Player:
     def __str__(self):
         return self.name
 
+    def handle_pre_dice_actions(self, board, players, log) -> str:
+        """Handle all actions that happen before rolling the dice:
+        1. Trade properties
+        2. Unmortgage properties
+        3. Build houses and hotels
+        Returns the log entries for these actions
+        """
+        log_entry = ""
+
+        # Handle trading
+        while True:
+            is_trade_found, trade_log = self.do_a_two_way_trade(players, board)
+            log_entry += trade_log
+            if not is_trade_found:
+                break
+
+        # Handle unmortgaging properties
+        while True:
+            unmortgaged, unmortgage_log = self.unmortgage_a_property(board, log)
+            if unmortgage_log:
+                log_entry += f", {unmortgage_log}"
+            if not unmortgaged:
+                break
+
+        # Handle property improvements
+        improvement_log = self.improve_properties(board, log)
+        if improvement_log:
+            log_entry += f", {improvement_log}"
+
+        return log_entry
+
     def make_a_move(self, board, players, dice, log, game_number, turn_n) -> Tuple[MoveResult, str]:
         """ Main function for a player to make a move
         Receives:
@@ -52,18 +83,10 @@ class Player:
         if self.is_bankrupt:
             return MoveResult.BANKRUPT, log_entry
 
-        # Before dice rolling:
-        # 1. Trade
-        # 2. Unmortgage properties
-        # 3. Build houses and hotels
-        while True:
-            is_trade_found, trade_log = self.do_a_two_way_trade(players, board)
-            log_entry += trade_log
-            if not is_trade_found:
-                break
-        while self.unmortgage_a_property(board, log):
-            pass
-        self.improve_properties(board, log)
+        # Handle all pre-dice-roll actions: Trade, Unmortgage, Improve properties
+        pre_dice_log = self.handle_pre_dice_actions(board, players, log)
+        if pre_dice_log:
+            log_entry += f", {pre_dice_log}"
 
         # Dice roll:
         dice_cast, dice_sum, is_double = dice.roll()
@@ -84,7 +107,8 @@ class Player:
         self.position += dice_sum
         # Get salary if we passed go on the way
         if self.position >= 40:
-            log_entry += self.handle_salary(board)
+            salary_msg = self.handle_salary(board)
+            log_entry += salary_msg
             self.position %= 40
         log_entry += f", goes to: {board.cells[self.position].name}"
 
@@ -114,7 +138,9 @@ class Player:
 
         # Player lands on a property
         if isinstance(board.cells[self.position], Property):
-            log_entry += self.handle_landing_on_property(board, players, dice)
+            property_msg = self.handle_landing_on_property(board, players, dice)
+            if property_msg:
+                log_entry += f", {property_msg}"
         elif isinstance(board.cells[self.position], GoToJail):
             self.handle_going_to_jail()
             return MoveResult.END_MOVE, log_entry
@@ -133,7 +159,9 @@ class Player:
 
         # Player lands on "Income Tax"
         if isinstance(board.cells[self.position], IncomeTax):
-            log_entry = self.handle_income_tax(board, log_entry)
+            tax_msg = self.handle_income_tax(board, "")
+            if tax_msg:
+                log_entry += f", {tax_msg}"
 
         # Reset the other_notes flag
         self.other_notes = OtherNotes.NONE
@@ -215,7 +243,6 @@ class Player:
         else:
             log_entry += f", pays {GameMechanics.income_tax_percentage * 100:.0f}% Income tax {tax_to_pay}"
         self.pay_money(tax_to_pay, "bank", board)
-        return log_entry
 
     def handle_landing_on_property(self, board, players, dice) -> str:
         """ Landing on property: either buy it or pay rent """
@@ -292,6 +319,7 @@ class Player:
         """ While there is money to spend and properties to improve,
         keep building houses/hotels
         """
+        log_entries = []
 
         def get_next_property_to_improve():
             """ Decide the next property to improve: cheapest, eligible property
@@ -350,7 +378,7 @@ class Player:
                 board.available_houses -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(
+                log_entries.append(
                     f"{self} built {get_ordinal_str(cell_to_improve.has_houses)} house on {cell_to_improve} for ${cell_to_improve.cost_house}")
 
             # Building a hotel
@@ -361,23 +389,24 @@ class Player:
                 board.available_hotels -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built a hotel on {cell_to_improve} for ${cell_to_improve.cost_house}")
+                log_entries.append(f"{self} built a hotel on {cell_to_improve} for ${cell_to_improve.cost_house}")
+
+        return ", ".join(log_entries)
 
     def unmortgage_a_property(self, board, log):
         """ Go through the list of properties and unmortgage one if there is enough money to do so.
-        Return True if any unmortgaging took place (to call it again)
+        Return (True if any unmortgaging took place, log message)
         """
         for cell in self.owned:
             if cell.is_mortgaged:
                 cost_to_unmortgage = cell.cost_base * GameMechanics.mortgage_value + cell.cost_base * GameMechanics.mortgage_fee
                 if self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
-                    log.add(f"{self} unmortgages {cell} for ${cost_to_unmortgage}")
                     self.money -= cost_to_unmortgage
                     cell.is_mortgaged = False
                     self.update_lists_of_properties_to_trade(board)
-                    return True
+                    return True, f"{self} unmortgages {cell} for ${cost_to_unmortgage}"
 
-        return False
+        return False, ""
 
     def raise_money(self, required_amount, board) -> str:
         """ Part of the "Pay money" method. If there is not enough cash, the player has to
@@ -709,7 +738,7 @@ class Player:
             self.owned.remove(cell_to_give)
 
         # Log the trade and compensation payment
-        log += f"\nTrade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
+        log += f"Trade: {self} gives {[str(cell) for cell in player_gives]}, receives {[str(cell) for cell in player_receives]} from {other_player}"
         if price_difference >= 0:
             log += f", {self} received price difference compensation ${abs(price_difference)} from {other_player}"
         else:
