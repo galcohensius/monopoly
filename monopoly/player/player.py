@@ -83,7 +83,7 @@ class Player:
         if self.is_bankrupt:
             return MoveResult.BANKRUPT, log_entry
 
-        # Handle all pre-dice-roll actions: Trade, Unmortgage, Improve properties
+        # pre-dice actions: Trade, Unmortgage, Improve properties
         pre_dice_log = self.handle_pre_dice_actions(board, players, log)
         if pre_dice_log:
             log_entry += f", {pre_dice_log}"
